@@ -34,5 +34,9 @@ services:
       - meilisearch:/meili_data
 
 volumes:
+  # Names are pinned so data survives whether this stack is brought up on its
+  # own (project "karakeep") or via the root compose.yaml (project "homelab").
   meilisearch:
+    name: karakeep_meilisearch
   data:
+    name: karakeep_data

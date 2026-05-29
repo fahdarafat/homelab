@@ -37,6 +37,10 @@ it will.
 
 ## Project conventions
 - Each app = its own folder with `docker-compose.yml` (+ `.env` for secrets, mirrored by
-  `.env.example`). Bring up: `docker compose --project-directory <app> -f <app>/docker-compose.yml up -d`.
+  `.env.example`). The root `compose.yaml` `include`s them all under one project (`homelab`);
+  bring everything up with `docker compose up -d`, or a single app with
+  `docker compose -f <app>/docker-compose.yml up -d`.
+- Karakeep's named volumes are pinned (`name: karakeep_data` / `karakeep_meilisearch`) so its
+  data survives the same whether run standalone or via the unified project. Don't unpin them.
 - See `README.md` for the full architecture, ports, remote access (Tailscale), backups, and
   system-monitoring (native Glances) details.

@@ -58,11 +58,19 @@ Set each app's `NEXTAUTH_URL`-style address to your own Tailscale MagicDNS name.
 
 ### 2. Bring up the stacks
 
+A root [`compose.yaml`](compose.yaml) `include`s every app, so the whole library
+comes up with one command from this folder:
+
 ```powershell
-foreach ($a in 'karakeep','memos','homarr','uptime-kuma') {
-  docker compose --project-directory "E:\homelab\$a" -f "E:\homelab\$a\docker-compose.yml" up -d
-}
+docker compose up -d        # start / update everything
+docker compose pull         # pull newer images, then `up -d` again
+docker compose down         # stop everything
+docker compose ps           # status
+docker compose logs -f      # follow logs (append a service name to narrow)
 ```
+
+Each app still has its own folder and `docker-compose.yml`, so you can also run
+just one: `docker compose -f karakeep/docker-compose.yml up -d`.
 
 First run of each app: open it and create the admin account.
 
@@ -94,17 +102,11 @@ not-24/7 PC is on).
 
 So a reboot brings the whole stack (and remote access) back with no manual steps.
 
-## Known limitations
-
-- **Not 24/7:** this is a personal PC. Apps are reachable only while it's awake + Tailscale is up.
-- **Offline mobile:** Karakeep offline is upstream WIP; Memos offline (via the *Moe Memos* app)
-  needs server ≤ 0.27.1, but this runs 0.29.x — so it's online-only for now.
-- **Glances on Windows:** disk *temperatures* report `N/A` (Windows limitation); usage/CPU/RAM/GPU work.
-
 ## Layout
 
 ```
 homelab/
+├─ compose.yaml   root entry point — includes every app (docker compose up -d)
 ├─ karakeep/      docker-compose.yml, .env(.example)
 ├─ memos/         docker-compose.yml
 ├─ homarr/        docker-compose.yml, .env(.example)

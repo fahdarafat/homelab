@@ -1,0 +1,23 @@
+# Homelab — unified entry point.
+#
+# Brings up every app stack with a single command from this folder:
+#
+#   docker compose up -d        # start / update everything
+#   docker compose pull         # pull newer images
+#   docker compose down         # stop everything
+#   docker compose ps           # status
+#   docker compose logs -f      # follow logs (add a service name to narrow)
+#
+# Each app still lives in its own folder with its own docker-compose.yml — this
+# file just `include`s them. Relative paths (./data, ./appdata) and each app's
+# .env resolve relative to that app's own folder, exactly as before.
+#
+# You can still bring up a single app on its own, e.g.:
+#   docker compose -f karakeep/docker-compose.yml up -d
+name: homelab
+
+include:
+  - karakeep/docker-compose.yml
+  - memos/docker-compose.yml
+  - homarr/docker-compose.yml
+  - uptime-kuma/docker-compose.yml
