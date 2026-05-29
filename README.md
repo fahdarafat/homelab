@@ -10,22 +10,25 @@ the public internet.
 
 ## Apps
 
-| App | Purpose | Host port | Notes |
+Every app is reached over HTTPS at its own Tailscale hostname, `https://<HTTPS host>.<tailnet>.ts.net`
+(via Caddy — see [HTTPS](#https-per-app-over-tailscale)). Containers no longer publish raw host ports.
+
+| App | Purpose | HTTPS host | Notes |
 |-----|---------|-----------|-------|
-| [Karakeep](https://github.com/karakeep-app/karakeep) | Bookmarks / read-it-later | 3000 | web + headless Chrome + Meilisearch |
-| [Memos](https://github.com/usememos/memos) | Notes | 5230 | pinned to `:stable` (currently v0.29.x) |
-| [Homarr](https://github.com/homarr-labs/homarr) | Dashboard / home base | 7575 | links to everything + live widgets |
-| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Uptime monitoring | 3001 | per-app up/down + history |
-| [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Document archive (OCR + search) | 8000 | web + PostgreSQL + Redis; drop files in `paperless/consume/` |
-| [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | 8082 | login enabled; `admin` account, password set on first login |
-| [Jellyfin](https://github.com/jellyfin/jellyfin) | Media server | 8096 | reads `E:\Media` read-only; no HW transcode on Docker Desktop |
-| [Syncthing](https://github.com/syncthing/syncthing) | File sync across devices | 8384 | P2P sync on `22000`; works fine even when not 24/7 |
-| [n8n](https://github.com/n8n-io/n8n) | Workflow automation | 5678 | web + PostgreSQL; set `N8N_HOST`/`WEBHOOK_URL` to your Tailscale host in `n8n/.env` |
-| [Activepieces](https://github.com/activepieces/activepieces) | Workflow automation (no-code) | 8080 | web + PostgreSQL + Redis; set `AP_FRONTEND_URL` to your Tailscale host in `activepieces/.env` |
-| [ntfy](https://github.com/binwiederhier/ntfy) | Push notifications (HTTP → phone) | 8090 | notification sink for automations/alerts; set `NTFY_BASE_URL` to your Tailscale host in `ntfy/.env` |
+| [Karakeep](https://github.com/karakeep-app/karakeep) | Bookmarks / read-it-later | `karakeep` | web + headless Chrome + Meilisearch |
+| [Memos](https://github.com/usememos/memos) | Notes | `memos` | pinned to `:stable` (currently v0.29.x) |
+| [Homarr](https://github.com/homarr-labs/homarr) | Dashboard / home base | `homarr` | links to everything + live widgets |
+| [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Uptime monitoring | `uptime` | per-app up/down + history |
+| [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Document archive (OCR + search) | `paperless` | web + PostgreSQL + Redis; drop files in `paperless/consume/` |
+| [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | `stirling` | login enabled; `admin` account, password set on first login |
+| [Jellyfin](https://github.com/jellyfin/jellyfin) | Media server | `jellyfin` | reads `E:\Media` read-only; no HW transcode on Docker Desktop |
+| [Syncthing](https://github.com/syncthing/syncthing) | File sync across devices | `syncthing` | UI via Caddy; P2P ports `22000`/`21027` stay published |
+| [n8n](https://github.com/n8n-io/n8n) | Workflow automation | `n8n` | web + PostgreSQL |
+| [Activepieces](https://github.com/activepieces/activepieces) | Workflow automation (no-code) | `activepieces` | web + PostgreSQL + Redis |
+| [ntfy](https://github.com/binwiederhier/ntfy) | Push notifications (HTTP → phone) | `ntfy` | automation/alert sink; iOS instant push via `ntfy.sh` upstream |
 | [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |
-| [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | 61208 | **native Windows**, not Docker (see below) |
-| [Caddy](https://caddyserver.com/) | Reverse proxy → per-app HTTPS | — | gives each app its own `*.ts.net` hostname over HTTPS (see [HTTPS](#https-per-app-over-tailscale)) |
+| [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | `glances` | **native Windows**, not Docker; Caddy proxies to the host |
+| [Caddy](https://caddyserver.com/) | Reverse proxy → per-app HTTPS | — | terminates TLS for every app (see [HTTPS](#https-per-app-over-tailscale)) |
 
 Homarr is the front door: open it and everything else is one click away, with a **Docker stats**
 widget (live container health) and a **System Health Monitoring** widget (CPU/RAM/GPU via Glances).
@@ -34,8 +37,9 @@ widget (live container health) and a **System Health Monitoring** widget (CPU/RA
 
 - **Containers:** each app lives in its own folder with a `docker-compose.yml` (+ `.env` for secrets).
   All use `restart: unless-stopped`.
-- **Remote access:** Tailscale. The raw `http://<this-host>.<tailnet>.ts.net:<port>` ports above stay
-  available from any device running Tailscale, and are still handy as a fallback.
+- **Remote access:** Tailscale. Apps are reachable only through Caddy at their own HTTPS hostnames
+  (below) from any device running Tailscale — the containers no longer publish raw host ports. The one
+  exception is Syncthing's peer-to-peer ports (`22000`/`21027`), which must stay published.
 - **HTTPS:** a single Caddy container (with the
   [`caddy-tailscale`](https://github.com/tailscale/caddy-tailscale) plugin) fronts every web app and
   serves it over **HTTPS at its own MagicDNS hostname** — `https://<app>.<tailnet>.ts.net` — with a real,
@@ -116,6 +120,11 @@ Copy-Item caddy\.env.example caddy\.env   # then fill in TS_NET + TS_AUTHKEY
 - **`TS_AUTHKEY`** — a **reusable, non-ephemeral** auth key (admin console → *Settings → Keys*). One
   key registers all the per-app nodes.
 
+You must also **enable HTTPS Certificates** in the Tailscale admin console (**DNS** page → *Enable
+HTTPS*). This is a separate toggle from MagicDNS; without it, nodes have no `*.ts.net` cert domains and
+Caddy can't obtain certificates (handshakes fail with a missing-`tailscaled.sock` error). MagicDNS must
+be enabled too.
+
 Caddy uses a **custom image** (stock Caddy has no Tailscale support), so build it on first bring-up:
 
 ```powershell
@@ -128,14 +137,16 @@ Within a minute or so the new devices appear in your Tailscale admin console and
 `karakeep`, `memos`, `homarr`, `uptime`, `paperless`, `stirling`, `jellyfin`, `syncthing`, `n8n`,
 `activepieces`, `ntfy`, `glances`).
 
-> **Per-app canonical URL:** apps that bake in their own base URL must point at the new HTTPS hostname,
-> or logins/redirects/CSRF will break. Update these in each app's `.env`: Karakeep `NEXTAUTH_URL`,
-> n8n `N8N_HOST`/`WEBHOOK_URL` (+ `N8N_PROTOCOL=https`), Activepieces `AP_FRONTEND_URL`, ntfy
-> `NTFY_BASE_URL`, and Paperless `PAPERLESS_URL` — all to `https://<app>.<tailnet>.ts.net`.
+> **Per-app canonical URL:** apps that bake in their own base URL must point at the HTTPS hostname, or
+> logins/redirects/CSRF break. Set these in each app's `.env` to `https://<app>.<tailnet>.ts.net`:
+> Karakeep `NEXTAUTH_URL`, Paperless `PAPERLESS_URL`, Activepieces `AP_FRONTEND_URL`, ntfy
+> `NTFY_BASE_URL`, and n8n `N8N_HOST` + `WEBHOOK_URL` + `N8N_EDITOR_BASE_URL` (leave `N8N_PROTOCOL=http`
+> — Caddy terminates TLS; forcing `https` makes n8n try to serve TLS itself). After editing, run
+> `docker compose up -d` to recreate the affected containers.
 
-> **Locking down the raw ports (optional):** once HTTPS is verified, you can stop publishing each app's
-> host port (remove its `ports:` mapping) so traffic only flows through Caddy. Keep non-HTTP ports that
-> Caddy doesn't proxy — Syncthing's `22000`/`21027` (P2P) and the like.
+> **Raw ports are not published:** traffic flows only through Caddy. Container-to-container calls use the
+> Docker network directly (e.g. publish to ntfy at `http://ntfy`), and Syncthing keeps its P2P ports
+> (`22000`/`21027`). To reach an app from a client, always use its `https://<app>.<tailnet>.ts.net` URL.
 
 ## Backups
 
