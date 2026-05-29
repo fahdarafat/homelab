@@ -23,6 +23,9 @@ jellyfin/config/
 jellyfin/cache/
 syncthing/config/
 syncthing/data/
+n8n/data/
+activepieces/redisdata/
+ntfy/cache/
 
 # Local backups (contain secrets + full DB snapshots, incl. password hashes)
 backups/

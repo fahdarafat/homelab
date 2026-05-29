@@ -1,0 +1,50 @@
+services:
+  activepieces:
+    image: activepieces/activepieces:${ACTIVEPIECES_VERSION:-latest}
+    container_name: activepieces
+    restart: unless-stopped
+    depends_on:
+      - activepieces-postgres
+      - activepieces-redis
+    ports:
+      - 8080:80
+    env_file:
+      - .env
+    environment:
+      AP_ENVIRONMENT: prod
+      AP_EXECUTION_MODE: UNSANDBOXED
+      AP_QUEUE_MODE: REDIS
+      AP_TELEMETRY_ENABLED: "false"
+      AP_POSTGRES_HOST: activepieces-postgres
+      AP_POSTGRES_PORT: 5432
+      AP_POSTGRES_DATABASE: activepieces
+      AP_POSTGRES_USERNAME: activepieces
+      AP_REDIS_HOST: activepieces-redis
+      AP_REDIS_PORT: 6379
+      TZ: Africa/Cairo
+
+  activepieces-postgres:
+    image: postgres:16
+    container_name: activepieces-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: activepieces
+      POSTGRES_USER: activepieces
+    volumes:
+      - activepieces_pgdata:/var/lib/postgresql/data
+
+  activepieces-redis:
+    image: redis:7
+    container_name: activepieces-redis
+    restart: unless-stopped
+    volumes:
+      - ./redisdata:/data
+
+volumes:
+  # Unique key AND pinned name: the key must be unique across all files merged
+  # by the root compose.yaml `include`, or the volumes collapse into one shared
+  # volume. The pinned name keeps data stable across standalone vs merged runs.
+  activepieces_pgdata:
+    name: activepieces_pgdata

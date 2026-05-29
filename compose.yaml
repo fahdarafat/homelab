@@ -26,3 +26,6 @@ include:
   - diun/docker-compose.yml
   - jellyfin/docker-compose.yml
   - syncthing/docker-compose.yml
+  - n8n/docker-compose.yml
+  - activepieces/docker-compose.yml
+  - ntfy/docker-compose.yml

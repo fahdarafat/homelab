@@ -1,0 +1,32 @@
+services:
+  ntfy:
+    image: binwiederhier/ntfy:${NTFY_VERSION:-latest}
+    container_name: ntfy
+    restart: unless-stopped
+    command: serve
+    ports:
+      - 8090:80
+    env_file:
+      - .env
+    environment:
+      # Message cache (so notifications persist and clients can poll history).
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_ATTACHMENT_CACHE_DIR: /var/cache/ntfy/attachments
+      # Tailscale-only access, so leave topics open (read-write). Lock down with
+      # NTFY_AUTH_DEFAULT_ACCESS=deny-all + users later if you ever expose it.
+      NTFY_AUTH_DEFAULT_ACCESS: read-write
+      # iOS instant push: Apple only allows wake-ups via APNs, and only the
+      # public ntfy.sh server holds the Apple cert. This forwards a wake-up
+      # (message ID + SHA-256 topic hash only — NOT the content) through ntfy.sh;
+      # the phone then fetches the real message body from NTFY_BASE_URL. Requires
+      # NTFY_BASE_URL to be set (it is, in .env).
+      NTFY_UPSTREAM_BASE_URL: https://ntfy.sh
+      TZ: Africa/Cairo
+    volumes:
+      - ./cache:/var/cache/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

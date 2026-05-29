@@ -1,0 +1,48 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-latest}
+    container_name: n8n
+    restart: unless-stopped
+    depends_on:
+      - n8n-postgres
+    ports:
+      - 5678:5678
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      # Task runners are the current execution model; enabling silences the
+      # deprecation warning and follows upstream best practice.
+      N8N_RUNNERS_ENABLED: "true"
+      # Served over plain http behind Tailscale (not https), so the auth cookie
+      # must not be marked Secure or login is impossible.
+      N8N_SECURE_COOKIE: "false"
+      GENERIC_TIMEZONE: Africa/Cairo
+      TZ: Africa/Cairo
+    volumes:
+      - ./data:/home/node/.n8n
+
+  n8n-postgres:
+    image: postgres:16
+    container_name: n8n-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+    volumes:
+      - n8n_pgdata:/var/lib/postgresql/data
+
+volumes:
+  # Unique key AND pinned name: the key must be unique across all files merged
+  # by the root compose.yaml `include`, or the volumes collapse into one shared
+  # volume. The pinned name keeps data stable across standalone vs merged runs.
+  n8n_pgdata:
+    name: n8n_pgdata

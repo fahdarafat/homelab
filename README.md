@@ -20,6 +20,9 @@ the public internet.
 | [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | 8082 | login enabled; `admin` account, password set on first login |
 | [Jellyfin](https://github.com/jellyfin/jellyfin) | Media server | 8096 | reads `E:\Media` read-only; no HW transcode on Docker Desktop |
 | [Syncthing](https://github.com/syncthing/syncthing) | File sync across devices | 8384 | P2P sync on `22000`; works fine even when not 24/7 |
+| [n8n](https://github.com/n8n-io/n8n) | Workflow automation | 5678 | web + PostgreSQL; set `N8N_HOST`/`WEBHOOK_URL` to your Tailscale host in `n8n/.env` |
+| [Activepieces](https://github.com/activepieces/activepieces) | Workflow automation (no-code) | 8080 | web + PostgreSQL + Redis; set `AP_FRONTEND_URL` to your Tailscale host in `activepieces/.env` |
+| [ntfy](https://github.com/binwiederhier/ntfy) | Push notifications (HTTP → phone) | 8090 | notification sink for automations/alerts; set `NTFY_BASE_URL` to your Tailscale host in `ntfy/.env` |
 | [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |
 | [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | 61208 | **native Windows**, not Docker (see below) |
 
