@@ -13,3 +13,8 @@ stirling.{$TS_NET} {
 	bind tailscale/stirling
 	reverse_proxy stirling-pdf:8080
 }
+
+glances.{$TS_NET} {
+	bind tailscale/glances
+	reverse_proxy host.docker.internal:61208
+}

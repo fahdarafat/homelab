@@ -22,6 +22,9 @@ Describe 'Get-AppServices' {
         # 'data' is a volume key, not a service — must NOT appear:
         ($svc -contains 'data')        | Should Be $false
     }
+    It 'returns empty when the compose file does not exist' {
+        (Get-AppServices -AppComposePath (Join-Path $fixtures 'no-such.yml')).Count | Should Be 0
+    }
 }
 
 Describe 'Get-EnvValue' {
@@ -46,6 +49,14 @@ Describe 'Get-ServiceUrls' {
         $urls = Get-ServiceUrls -CaddyfilePath (Join-Path $fixtures 'Caddyfile') -TsNet ''
         $urls.Count | Should Be 0
     }
+    It 'does not add an entry for a non-container upstream (host.docker.internal)' {
+        $urls = Get-ServiceUrls -CaddyfilePath (Join-Path $fixtures 'Caddyfile') -TsNet 'example.ts.net'
+        $urls.ContainsKey('host.docker.internal') | Should Be $false
+        $urls.ContainsKey('host')                 | Should Be $false
+    }
+    It 'returns an empty map when the Caddyfile does not exist' {
+        (Get-ServiceUrls -CaddyfilePath (Join-Path $fixtures 'no-such-Caddyfile') -TsNet 'example.ts.net').Count | Should Be 0
+    }
 }
 
 Describe 'Resolve-AppArgs' {
@@ -65,6 +76,9 @@ Describe 'Resolve-AppArgs' {
     It 'returns empty for no args' {
         (Resolve-AppArgs -RawArgs @()).Count | Should Be 0
     }
+    It 'throws when --filter has no value' {
+        { Resolve-AppArgs -RawArgs @('--filter') } | Should Throw
+    }
 }
 
 Describe 'Resolve-Services' {
@@ -77,6 +91,6 @@ Describe 'Resolve-Services' {
         (Resolve-Services -AppNames @() -AppServices $map).Count | Should Be 0
     }
     It 'throws a helpful error on an unknown app' {
-        { Resolve-Services -AppNames @('bogus') -AppServices $map } | Should Throw
+        { Resolve-Services -AppNames @('bogus') -AppServices $map } | Should Throw "Unknown app 'bogus'"
     }
 }

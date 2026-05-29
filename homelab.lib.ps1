@@ -3,6 +3,7 @@
 
 function Get-HomelabApps {
     param([Parameter(Mandatory)][string]$ComposePath)
+    if (-not (Test-Path -LiteralPath $ComposePath)) { return ,@() }
     $apps = @()
     foreach ($line in Get-Content -LiteralPath $ComposePath) {
         if ($line -match '^\s*-\s*([A-Za-z0-9._-]+)/docker-compose\.ya?ml\s*$') {
@@ -14,12 +15,14 @@ function Get-HomelabApps {
 
 function Get-AppServices {
     param([Parameter(Mandatory)][string]$AppComposePath)
+    if (-not (Test-Path -LiteralPath $AppComposePath)) { return ,@() }
     $services = @()
     $inServices = $false
     foreach ($line in Get-Content -LiteralPath $AppComposePath) {
         if ($line -match '^services:\s*$') { $inServices = $true; continue }
         # A new top-level key (column 0, not whitespace, not a comment) ends the block.
         if ($line -match '^[^\s#]') { $inServices = $false }
+        # Assumes block-style YAML; flow-style inline mappings are not matched.
         if ($inServices -and $line -match '^  ([A-Za-z0-9._-]+):\s*$') {
             $services += $Matches[1]
         }
@@ -32,6 +35,7 @@ function Get-EnvValue {
         [Parameter(Mandatory)][string]$EnvPath,
         [Parameter(Mandatory)][string]$Key
     )
+    # A present key with an empty value (KEY=) returns '' — only a missing key or missing file returns $null.
     if (-not (Test-Path -LiteralPath $EnvPath)) { return $null }
     $escaped = [regex]::Escape($Key)
     foreach ($line in Get-Content -LiteralPath $EnvPath) {
@@ -56,9 +60,10 @@ function Get-ServiceUrls {
         if ($line -match '^([A-Za-z0-9._-]+)\.\{\$TS_NET\}\s*\{') {
             $currentHost = $Matches[1]
         }
-        elseif ($line -match '^\s*reverse_proxy\s+([A-Za-z0-9._-]+):\d+') {
+        elseif ($line -match '^\s*reverse_proxy\s+([A-Za-z0-9_-]+):\d+') {
             if ($currentHost) { $map[$Matches[1]] = "https://$currentHost.$TsNet" }
         }
+        # NOTE: assumes single-level site blocks; nested {} would reset $currentHost early.
         elseif ($line -match '^\}') {
             $currentHost = $null
         }
@@ -73,6 +78,7 @@ function Resolve-AppArgs {
         $a = $RawArgs[$i]
         if ($a -eq '--filter') {
             if ($i + 1 -lt $RawArgs.Count) { $apps += $RawArgs[$i + 1]; $i++ }
+            else { throw "--filter requires a value (an app name)" }
         }
         elseif ($a -like '--filter=*') {
             $apps += ($a -replace '^--filter=', '')
