@@ -93,6 +93,33 @@ just one: `docker compose -f karakeep/docker-compose.yml up -d`.
 
 First run of each app: open it and create the admin account.
 
+### CLI (`homelab`)
+
+A thin PowerShell wrapper (`homelab.ps1`) abstracts the `docker compose` commands and works from any
+directory. Install the `homelab` function into your PowerShell profile once:
+
+```powershell
+.\homelab.ps1 install   # run in the PowerShell edition you use (5.1 and 7 have separate profiles)
+. $PROFILE              # reload, or open a new terminal
+```
+
+Then, from anywhere:
+
+```powershell
+homelab up                  # start / refresh everything (docker compose up -d)
+homelab up karakeep memos   # just these apps (resolves to their services)
+homelab down                # tear everything down
+homelab down karakeep       # stop + remove just karakeep's containers (data kept)
+homelab list                # status grouped by app, with each app's https URL
+homelab logs caddy          # follow one app's logs
+homelab restart paperless
+homelab update              # pull newer images, then recreate
+homelab build caddy         # rebuild the custom Caddy image, then recreate
+```
+
+App names are the folders in `compose.yaml`; `homelab uninstall` removes the profile function.
+Tab-completion suggests commands and app names.
+
 ### 3. System metrics (Glances, native)
 
 ```powershell
