@@ -66,3 +66,17 @@ Describe 'Resolve-AppArgs' {
         (Resolve-AppArgs -RawArgs @()).Count | Should Be 0
     }
 }
+
+Describe 'Resolve-Services' {
+    $map = @{ karakeep = @('web','chrome','meilisearch'); memos = @('memos') }
+
+    It 'expands app names to all their services' {
+        (Resolve-Services -AppNames @('karakeep') -AppServices $map) -join ',' | Should Be 'web,chrome,meilisearch'
+    }
+    It 'returns empty when no app names given (means all)' {
+        (Resolve-Services -AppNames @() -AppServices $map).Count | Should Be 0
+    }
+    It 'throws a helpful error on an unknown app' {
+        { Resolve-Services -AppNames @('bogus') -AppServices $map } | Should Throw
+    }
+}

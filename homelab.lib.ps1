@@ -83,3 +83,19 @@ function Resolve-AppArgs {
     }
     return ,$apps
 }
+
+function Resolve-Services {
+    param(
+        [string[]]$AppNames = @(),
+        [Parameter(Mandatory)][hashtable]$AppServices
+    )
+    $services = @()
+    foreach ($app in $AppNames) {
+        if (-not $AppServices.ContainsKey($app)) {
+            $valid = (($AppServices.Keys) | Sort-Object) -join ', '
+            throw "Unknown app '$app'. Valid apps: $valid"
+        }
+        $services += $AppServices[$app]
+    }
+    return ,$services
+}
