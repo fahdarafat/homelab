@@ -4,8 +4,6 @@ services:
     container_name: ntfy
     restart: unless-stopped
     command: serve
-    ports:
-      - 8090:80
     env_file:
       - .env
     environment:
