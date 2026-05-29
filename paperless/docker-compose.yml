@@ -1,0 +1,52 @@
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    depends_on:
+      - paperless-db
+      - paperless-broker
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    environment:
+      PAPERLESS_REDIS: redis://paperless-broker:6379
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_TIME_ZONE: Africa/Cairo
+      PAPERLESS_OCR_LANGUAGE: eng
+      # Windows/WSL2 bind mounts don't emit inotify events, so poll the consume
+      # folder instead of waiting for file-system notifications.
+      PAPERLESS_CONSUMER_POLLING: 60
+    volumes:
+      - ./data:/usr/src/paperless/data
+      - ./media:/usr/src/paperless/media
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+
+  paperless-broker:
+    image: redis:7
+    container_name: paperless-broker
+    restart: unless-stopped
+    volumes:
+      - ./redisdata:/data
+
+  paperless-db:
+    image: postgres:16
+    container_name: paperless-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  # Pinned name so the DB survives whether this stack runs standalone
+  # (project "paperless") or via the root compose.yaml (project "homelab").
+  pgdata:
+    name: paperless_pgdata

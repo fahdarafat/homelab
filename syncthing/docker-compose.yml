@@ -1,0 +1,18 @@
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    hostname: fahd-pc          # how this device shows up to other Syncthing peers
+    restart: unless-stopped
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Africa/Cairo
+    ports:
+      - 8384:8384            # web UI
+      - 22000:22000/tcp      # sync protocol (TCP)
+      - 22000:22000/udp      # sync protocol (QUIC)
+      - 21027:21027/udp      # local discovery
+    volumes:
+      - ./config:/var/syncthing/config
+      - ./data:/var/syncthing/data   # add folders under here in the web UI

@@ -21,3 +21,8 @@ include:
   - memos/docker-compose.yml
   - homarr/docker-compose.yml
   - uptime-kuma/docker-compose.yml
+  - paperless/docker-compose.yml
+  - stirling-pdf/docker-compose.yml
+  - diun/docker-compose.yml
+  - jellyfin/docker-compose.yml
+  - syncthing/docker-compose.yml

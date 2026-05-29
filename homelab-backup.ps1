@@ -5,7 +5,7 @@ $Root       = 'E:\homelab'
 $BackupRoot = Join-Path $Root 'backups'
 $Keep       = 7
 # Named Docker volumes to archive (bind mounts are covered by the file copy below):
-$Volumes    = @('karakeep_data', 'karakeep_meilisearch')
+$Volumes    = @('karakeep_data', 'karakeep_meilisearch', 'paperless_pgdata')
 
 $ts   = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $Dest = Join-Path $BackupRoot $ts

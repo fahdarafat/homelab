@@ -1,0 +1,18 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - 8096:8096
+    environment:
+      TZ: Africa/Cairo
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      # Your media library, mounted read-only. Long syntax avoids the Windows
+      # drive-letter colon clashing with Compose's volume separator.
+      - type: bind
+        source: E:\Media
+        target: /media
+        read_only: true

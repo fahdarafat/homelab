@@ -1,0 +1,17 @@
+services:
+  stirling-pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: stirling-pdf
+    restart: unless-stopped
+    ports:
+      - 8082:8080
+    environment:
+      # Single-user, Tailscale-only: no login wall. Set to "true" to enable it.
+      SECURITY_ENABLELOGIN: "false"
+      SYSTEM_DEFAULTLOCALE: en-US
+      LANGS: en_GB
+    volumes:
+      - ./tessdata:/usr/share/tessdata   # extra OCR languages
+      - ./config:/configs
+      - ./customFiles:/customFiles
+      - ./logs:/logs

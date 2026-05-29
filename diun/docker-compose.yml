@@ -1,0 +1,23 @@
+services:
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    restart: unless-stopped
+    command: serve
+    environment:
+      TZ: Africa/Cairo
+      LOG_LEVEL: info
+      LOG_JSON: "false"
+      DIUN_WATCH_WORKERS: 10
+      # Check daily at 09:00. Diun is notify-only — it never touches your images.
+      DIUN_WATCH_SCHEDULE: 0 9 * * *
+      DIUN_WATCH_JITTER: 30s
+      DIUN_PROVIDERS_DOCKER: "true"
+      # Watch every running container without needing per-container labels.
+      DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
+      # Log-only for now. To get push alerts, add a notifier here later, e.g.:
+      #   DIUN_NOTIF_NTFY_ENDPOINT: https://ntfy.sh
+      #   DIUN_NOTIF_NTFY_TOPIC: my-homelab-updates
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro

@@ -9,6 +9,20 @@
 memos/data/
 uptime-kuma/data/
 homarr/appdata/
+paperless/data/
+paperless/media/
+paperless/export/
+paperless/consume/
+paperless/redisdata/
+stirling-pdf/tessdata/
+stirling-pdf/config/
+stirling-pdf/customFiles/
+stirling-pdf/logs/
+diun/data/
+jellyfin/config/
+jellyfin/cache/
+syncthing/config/
+syncthing/data/
 
 # Local backups (contain secrets + full DB snapshots, incl. password hashes)
 backups/

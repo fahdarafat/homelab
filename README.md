@@ -16,6 +16,11 @@ the public internet.
 | [Memos](https://github.com/usememos/memos) | Notes | 5230 | pinned to `:stable` (currently v0.29.x) |
 | [Homarr](https://github.com/homarr-labs/homarr) | Dashboard / home base | 7575 | links to everything + live widgets |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Uptime monitoring | 3001 | per-app up/down + history |
+| [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Document archive (OCR + search) | 8000 | web + PostgreSQL + Redis; drop files in `paperless/consume/` |
+| [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | 8082 | stateless; login disabled (Tailscale-only) |
+| [Jellyfin](https://github.com/jellyfin/jellyfin) | Media server | 8096 | reads `E:\Media` read-only; no HW transcode on Docker Desktop |
+| [Syncthing](https://github.com/syncthing/syncthing) | File sync across devices | 8384 | P2P sync on `22000`; works fine even when not 24/7 |
+| [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |
 | [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | 61208 | **native Windows**, not Docker (see below) |
 
 Homarr is the front door: open it and everything else is one click away, with a **Docker stats**
@@ -41,8 +46,9 @@ Prerequisites: Docker Desktop, Tailscale (signed in), and — for system metrics
 Each app with secrets ships a `.env.example`. Copy and fill it in:
 
 ```powershell
-Copy-Item karakeep\.env.example karakeep\.env
-Copy-Item homarr\.env.example   homarr\.env
+Copy-Item karakeep\.env.example  karakeep\.env
+Copy-Item homarr\.env.example    homarr\.env
+Copy-Item paperless\.env.example paperless\.env
 ```
 
 Generate strong values (Git Bash / WSL has `openssl`; or use PowerShell):
@@ -111,6 +117,11 @@ homelab/
 ├─ memos/         docker-compose.yml
 ├─ homarr/        docker-compose.yml, .env(.example)
 ├─ uptime-kuma/   docker-compose.yml
+├─ paperless/     docker-compose.yml, .env(.example)
+├─ stirling-pdf/  docker-compose.yml
+├─ jellyfin/      docker-compose.yml
+├─ syncthing/     docker-compose.yml
+├─ diun/          docker-compose.yml
 ├─ homelab-backup.ps1
 ├─ glances-start.bat / glances-start.vbs
 └─ README.md
