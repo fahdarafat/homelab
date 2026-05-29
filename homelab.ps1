@@ -1,5 +1,5 @@
 #requires -Version 5.1
-# homelab — thin wrapper around `docker compose` for this repo.
+# homelab - thin wrapper around `docker compose` for this repo.
 # Runnable from any directory; always targets <repo>\compose.yaml.
 
 $ErrorActionPreference = 'Stop'
@@ -34,7 +34,7 @@ function Get-AppServicesMap {
 
 function Show-Usage {
     @"
-homelab — manage the homelab docker compose stack from anywhere
+homelab - manage the homelab docker compose stack from anywhere
 
 Usage: homelab <command> [apps...]
 
@@ -56,7 +56,7 @@ No apps = all apps. '--filter <app>' is accepted as an alias.
 }
 
 # ---------------------------------------------------------------------------
-# list — grouped-by-app status with HTTPS URLs
+# list - grouped-by-app status with HTTPS URLs
 # ---------------------------------------------------------------------------
 
 function Show-HomelabList {
@@ -103,7 +103,7 @@ function Show-HomelabList {
 }
 
 # ---------------------------------------------------------------------------
-# install / uninstall — manage the $PROFILE function + tab-completion
+# install / uninstall - manage the $PROFILE function + tab-completion
 # ---------------------------------------------------------------------------
 
 $script:HomelabMarkerStart = '# >>> homelab cli >>>'
