@@ -1,7 +1,7 @@
-# Self-hosted apps backup - config + bind-mount data + named Docker volumes.
-# Creates a timestamped, standalone snapshot under E:\selfhosted\backups and keeps the newest $Keep.
+# Homelab apps backup - config + bind-mount data + named Docker volumes.
+# Creates a timestamped, standalone snapshot under E:\homelab\backups and keeps the newest $Keep.
 $ErrorActionPreference = 'Continue'
-$Root       = 'E:\selfhosted'
+$Root       = 'E:\homelab'
 $BackupRoot = Join-Path $Root 'backups'
 $Keep       = 7
 # Named Docker volumes to archive (bind mounts are covered by the file copy below):
@@ -15,7 +15,7 @@ New-Item -ItemType Directory -Force -Path $VolDir | Out-Null
 Start-Transcript -Path (Join-Path $Dest 'backup.log') -Force | Out-Null
 "[$(Get-Date -Format o)] Backup START -> $Dest"
 
-# 1) Config files + bind-mounted data (everything under E:\selfhosted except the backups folder)
+# 1) Config files + bind-mounted data (everything under E:\homelab except the backups folder)
 "Copying config + bind-mount data ..."
 robocopy $Root (Join-Path $Dest 'files') /E /XD $BackupRoot /R:1 /W:1 /NFL /NDL /NP /NJH /NJS | Out-Null
 "  robocopy exit code: $LASTEXITCODE (0-7 means success)"

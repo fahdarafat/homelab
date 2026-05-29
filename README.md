@@ -1,4 +1,4 @@
-# Self-Hosted Stack
+# Homelab
 
 A personal, Docker-based self-hosted app library running on a Windows 11 PC (Docker Desktop),
 reached privately from anywhere over [Tailscale](https://tailscale.com/). Nothing is exposed to
@@ -60,7 +60,7 @@ Set each app's `NEXTAUTH_URL`-style address to your own Tailscale MagicDNS name.
 
 ```powershell
 foreach ($a in 'karakeep','memos','homarr','uptime-kuma') {
-  docker compose --project-directory "E:\selfhosted\$a" -f "E:\selfhosted\$a\docker-compose.yml" up -d
+  docker compose --project-directory "E:\homelab\$a" -f "E:\homelab\$a\docker-compose.yml" up -d
 }
 ```
 
@@ -79,9 +79,9 @@ under `pythonw`). In Homarr, add a **Glances** integration pointing at
 
 ## Backups
 
-`selfhosted-backup.ps1` snapshots config + bind-mount data (`robocopy`) and the Karakeep Docker
+`homelab-backup.ps1` snapshots config + bind-mount data (`robocopy`) and the Karakeep Docker
 volumes (`alpine tar`) into `backups\<timestamp>\`, keeping the newest 7. Run it manually, or via
-the **"Selfhosted Backup"** scheduled task (daily, *start-when-available* so it catches up when this
+the **"Homelab Backup"** scheduled task (daily, *start-when-available* so it catches up when this
 not-24/7 PC is on).
 
 > `backups/` is git-ignored. For real safety, copy snapshots off this disk (external drive / cloud).
@@ -104,12 +104,12 @@ So a reboot brings the whole stack (and remote access) back with no manual steps
 ## Layout
 
 ```
-selfhosted/
+homelab/
 ├─ karakeep/      docker-compose.yml, .env(.example)
 ├─ memos/         docker-compose.yml
 ├─ homarr/        docker-compose.yml, .env(.example)
 ├─ uptime-kuma/   docker-compose.yml
-├─ selfhosted-backup.ps1
+├─ homelab-backup.ps1
 ├─ glances-start.bat / glances-start.vbs
 └─ README.md
 ```
