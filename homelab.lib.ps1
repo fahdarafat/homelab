@@ -26,3 +26,18 @@ function Get-AppServices {
     }
     return ,$services
 }
+
+function Get-EnvValue {
+    param(
+        [Parameter(Mandatory)][string]$EnvPath,
+        [Parameter(Mandatory)][string]$Key
+    )
+    if (-not (Test-Path -LiteralPath $EnvPath)) { return $null }
+    $escaped = [regex]::Escape($Key)
+    foreach ($line in Get-Content -LiteralPath $EnvPath) {
+        if ($line -match "^\s*$escaped\s*=\s*(.*?)\s*$") {
+            return $Matches[1]
+        }
+    }
+    return $null
+}

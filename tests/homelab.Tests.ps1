@@ -23,3 +23,15 @@ Describe 'Get-AppServices' {
         ($svc -contains 'data')        | Should Be $false
     }
 }
+
+Describe 'Get-EnvValue' {
+    It 'returns the value for a key' {
+        Get-EnvValue -EnvPath (Join-Path $fixtures 'caddy.env') -Key 'TS_NET' | Should Be 'example.ts.net'
+    }
+    It 'returns $null for a missing key' {
+        Get-EnvValue -EnvPath (Join-Path $fixtures 'caddy.env') -Key 'NOPE' | Should Be $null
+    }
+    It 'returns $null when the file does not exist' {
+        Get-EnvValue -EnvPath (Join-Path $fixtures 'no-such.env') -Key 'TS_NET' | Should Be $null
+    }
+}
