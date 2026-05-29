@@ -1,0 +1,5 @@
+name: homelab
+include:
+  - caddy/docker-compose.yml
+  - karakeep/docker-compose.yml
+  - stirling-pdf/docker-compose.yml

@@ -1,0 +1,15 @@
+services:
+  web:
+    image: ghcr.io/karakeep-app/karakeep:release
+    volumes:
+      - data:/data
+  chrome:
+    image: gcr.io/zenika-hub/alpine-chrome:124
+  meilisearch:
+    image: getmeili/meilisearch:v1.41.0
+
+volumes:
+  meilisearch:
+    name: karakeep_meilisearch
+  data:
+    name: karakeep_data

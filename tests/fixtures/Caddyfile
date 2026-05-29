@@ -1,0 +1,15 @@
+{
+	tailscale {
+		ephemeral false
+	}
+}
+
+karakeep.{$TS_NET} {
+	bind tailscale/karakeep
+	reverse_proxy web:3000
+}
+
+stirling.{$TS_NET} {
+	bind tailscale/stirling
+	reverse_proxy stirling-pdf:8080
+}
