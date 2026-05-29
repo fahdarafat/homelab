@@ -35,3 +35,15 @@ Describe 'Get-EnvValue' {
         Get-EnvValue -EnvPath (Join-Path $fixtures 'no-such.env') -Key 'TS_NET' | Should Be $null
     }
 }
+
+Describe 'Get-ServiceUrls' {
+    It 'maps each proxied service to its https URL' {
+        $urls = Get-ServiceUrls -CaddyfilePath (Join-Path $fixtures 'Caddyfile') -TsNet 'example.ts.net'
+        $urls['web']          | Should Be 'https://karakeep.example.ts.net'
+        $urls['stirling-pdf'] | Should Be 'https://stirling.example.ts.net'
+    }
+    It 'returns an empty map when TsNet is missing' {
+        $urls = Get-ServiceUrls -CaddyfilePath (Join-Path $fixtures 'Caddyfile') -TsNet ''
+        $urls.Count | Should Be 0
+    }
+}

@@ -41,3 +41,27 @@ function Get-EnvValue {
     }
     return $null
 }
+
+function Get-ServiceUrls {
+    param(
+        [Parameter(Mandatory)][string]$CaddyfilePath,
+        [string]$TsNet
+    )
+    $map = @{}
+    if ([string]::IsNullOrWhiteSpace($TsNet) -or -not (Test-Path -LiteralPath $CaddyfilePath)) {
+        return $map
+    }
+    $currentHost = $null
+    foreach ($line in Get-Content -LiteralPath $CaddyfilePath) {
+        if ($line -match '^([A-Za-z0-9._-]+)\.\{\$TS_NET\}\s*\{') {
+            $currentHost = $Matches[1]
+        }
+        elseif ($line -match '^\s*reverse_proxy\s+([A-Za-z0-9._-]+):\d+') {
+            if ($currentHost) { $map[$Matches[1]] = "https://$currentHost.$TsNet" }
+        }
+        elseif ($line -match '^\}') {
+            $currentHost = $null
+        }
+    }
+    return $map
+}
