@@ -1,0 +1,17 @@
+# ============================================================
+#  NEVER COMMIT THESE — secrets & personal data
+# ============================================================
+
+# Secrets (API keys, NextAuth/Meili/Homarr encryption keys)
+.env
+
+# Persistent app data / databases (bind mounts)
+memos/data/
+uptime-kuma/data/
+homarr/appdata/
+
+# Local backups (contain secrets + full DB snapshots, incl. password hashes)
+backups/
+
+# Logs
+*.log
