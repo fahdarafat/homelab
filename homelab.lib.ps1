@@ -65,3 +65,21 @@ function Get-ServiceUrls {
     }
     return $map
 }
+
+function Resolve-AppArgs {
+    param([string[]]$RawArgs = @())
+    $apps = @()
+    for ($i = 0; $i -lt $RawArgs.Count; $i++) {
+        $a = $RawArgs[$i]
+        if ($a -eq '--filter') {
+            if ($i + 1 -lt $RawArgs.Count) { $apps += $RawArgs[$i + 1]; $i++ }
+        }
+        elseif ($a -like '--filter=*') {
+            $apps += ($a -replace '^--filter=', '')
+        }
+        elseif ($a -notmatch '^-') {
+            $apps += $a
+        }
+    }
+    return ,$apps
+}

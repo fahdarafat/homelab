@@ -47,3 +47,22 @@ Describe 'Get-ServiceUrls' {
         $urls.Count | Should Be 0
     }
 }
+
+Describe 'Resolve-AppArgs' {
+    It 'returns positional app names' {
+        $r = Resolve-AppArgs -RawArgs @('karakeep','memos')
+        ($r -join ',') | Should Be 'karakeep,memos'
+    }
+    It 'treats --filter <app> as an app name' {
+        (Resolve-AppArgs -RawArgs @('--filter','karakeep')) -join ',' | Should Be 'karakeep'
+    }
+    It 'treats --filter=<app> as an app name' {
+        (Resolve-AppArgs -RawArgs @('--filter=memos')) -join ',' | Should Be 'memos'
+    }
+    It 'ignores other flags' {
+        (Resolve-AppArgs -RawArgs @('--tail=100')).Count | Should Be 0
+    }
+    It 'returns empty for no args' {
+        (Resolve-AppArgs -RawArgs @()).Count | Should Be 0
+    }
+}
