@@ -1,0 +1,18 @@
+services:
+  caddy:
+    build: .
+    image: homelab-caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # /data holds Caddy's certs AND the Tailscale node state (state_dir).
+      # /config holds Caddy's autosaved JSON. Both are git-ignored.
+      - ./data:/data
+      - ./config:/config
+    # No `ports:` on purpose. Caddy is NOT exposed on any host port — every app
+    # is reachable only through its own Tailscale node (created by `bind
+    # tailscale/...`), which connects out to the tailnet. Nothing is published
+    # to the LAN or the internet.

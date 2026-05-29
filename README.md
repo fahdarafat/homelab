@@ -25,6 +25,7 @@ the public internet.
 | [ntfy](https://github.com/binwiederhier/ntfy) | Push notifications (HTTP → phone) | 8090 | notification sink for automations/alerts; set `NTFY_BASE_URL` to your Tailscale host in `ntfy/.env` |
 | [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |
 | [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | 61208 | **native Windows**, not Docker (see below) |
+| [Caddy](https://caddyserver.com/) | Reverse proxy → per-app HTTPS | — | gives each app its own `*.ts.net` hostname over HTTPS (see [HTTPS](#https-per-app-over-tailscale)) |
 
 Homarr is the front door: open it and everything else is one click away, with a **Docker stats**
 widget (live container health) and a **System Health Monitoring** widget (CPU/RAM/GPU via Glances).
@@ -33,9 +34,14 @@ widget (live container health) and a **System Health Monitoring** widget (CPU/RA
 
 - **Containers:** each app lives in its own folder with a `docker-compose.yml` (+ `.env` for secrets).
   All use `restart: unless-stopped`.
-- **Remote access:** Tailscale. Every app is reachable at `http://<this-host>.<tailnet>.ts.net:<port>`
-  from any device that has Tailscale running. That MagicDNS name is also the canonical URL baked into
-  app configs (e.g. Karakeep's `NEXTAUTH_URL`).
+- **Remote access:** Tailscale. The raw `http://<this-host>.<tailnet>.ts.net:<port>` ports above stay
+  available from any device running Tailscale, and are still handy as a fallback.
+- **HTTPS:** a single Caddy container (with the
+  [`caddy-tailscale`](https://github.com/tailscale/caddy-tailscale) plugin) fronts every web app and
+  serves it over **HTTPS at its own MagicDNS hostname** — `https://<app>.<tailnet>.ts.net` — with a real,
+  auto-renewing Let's Encrypt cert. Each app sits at the root path (not a subpath), which is what makes
+  PWA installs and browser features that **require a secure context** (microphone, camera, service
+  workers) work — e.g. Memos voice memos on iOS. See [HTTPS](#https-per-app-over-tailscale).
 - **System metrics exception:** Glances runs **natively on Windows**, not in a container — a
   container on Docker Desktop only sees the WSL2 VM, not the real host (and can't read the GPU).
   Homarr reaches it at `http://host.docker.internal:61208`.
@@ -94,6 +100,43 @@ Glances is started hidden at logon by `glances-start.vbs` → `glances-start.bat
 under `pythonw`). In Homarr, add a **Glances** integration pointing at
 `http://host.docker.internal:61208`, then add the **System Health Monitoring** widget.
 
+## HTTPS (per app, over Tailscale)
+
+Caddy gives every app its own HTTPS hostname (`https://<app>.<tailnet>.ts.net`) so browser features
+that need a **secure context** work. It joins the tailnet as one node per app via the
+[`caddy-tailscale`](https://github.com/tailscale/caddy-tailscale) plugin and gets free, auto-renewing
+`*.ts.net` certs — no domain to buy, nothing exposed to the public internet.
+
+```powershell
+Copy-Item caddy\.env.example caddy\.env   # then fill in TS_NET + TS_AUTHKEY
+```
+
+- **`TS_NET`** — your tailnet domain (the part after the machine name in a MagicDNS hostname, e.g.
+  `tailXXXX.ts.net`). Find it on the Tailscale admin **DNS** page.
+- **`TS_AUTHKEY`** — a **reusable, non-ephemeral** auth key (admin console → *Settings → Keys*). One
+  key registers all the per-app nodes.
+
+Caddy uses a **custom image** (stock Caddy has no Tailscale support), so build it on first bring-up:
+
+```powershell
+docker compose up -d --build        # builds caddy + starts everything
+docker compose logs -f caddy        # watch the nodes register
+```
+
+Within a minute or so the new devices appear in your Tailscale admin console and the apps are live at
+`https://memos.<tailnet>.ts.net`, `https://karakeep.<tailnet>.ts.net`, etc. (hostnames:
+`karakeep`, `memos`, `homarr`, `uptime`, `paperless`, `stirling`, `jellyfin`, `syncthing`, `n8n`,
+`activepieces`, `ntfy`, `glances`).
+
+> **Per-app canonical URL:** apps that bake in their own base URL must point at the new HTTPS hostname,
+> or logins/redirects/CSRF will break. Update these in each app's `.env`: Karakeep `NEXTAUTH_URL`,
+> n8n `N8N_HOST`/`WEBHOOK_URL` (+ `N8N_PROTOCOL=https`), Activepieces `AP_FRONTEND_URL`, ntfy
+> `NTFY_BASE_URL`, and Paperless `PAPERLESS_URL` — all to `https://<app>.<tailnet>.ts.net`.
+
+> **Locking down the raw ports (optional):** once HTTPS is verified, you can stop publishing each app's
+> host port (remove its `ports:` mapping) so traffic only flows through Caddy. Keep non-HTTP ports that
+> Caddy doesn't proxy — Syncthing's `22000`/`21027` (P2P) and the like.
+
 ## Backups
 
 `homelab-backup.ps1` snapshots config + bind-mount data (`robocopy`) and the Karakeep Docker
@@ -116,6 +159,7 @@ So a reboot brings the whole stack (and remote access) back with no manual steps
 ```
 homelab/
 ├─ compose.yaml   root entry point — includes every app (docker compose up -d)
+├─ caddy/         Dockerfile, Caddyfile, docker-compose.yml, .env(.example)
 ├─ karakeep/      docker-compose.yml, .env(.example)
 ├─ memos/         docker-compose.yml
 ├─ homarr/        docker-compose.yml, .env(.example)
@@ -124,6 +168,9 @@ homelab/
 ├─ stirling-pdf/  docker-compose.yml
 ├─ jellyfin/      docker-compose.yml
 ├─ syncthing/     docker-compose.yml
+├─ n8n/           docker-compose.yml, .env(.example)
+├─ activepieces/  docker-compose.yml, .env(.example)
+├─ ntfy/          docker-compose.yml, .env(.example)
 ├─ diun/          docker-compose.yml
 ├─ homelab-backup.ps1
 ├─ glances-start.bat / glances-start.vbs
