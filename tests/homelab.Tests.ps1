@@ -11,3 +11,15 @@ Describe 'Get-HomelabApps' {
         ($apps -contains 'caddy')        | Should Be $true
     }
 }
+
+Describe 'Get-AppServices' {
+    It 'returns the service keys and excludes top-level volume keys' {
+        $svc = Get-AppServices -AppComposePath (Join-Path $fixtures 'karakeep\docker-compose.yml')
+        $svc.Count | Should Be 3
+        ($svc -contains 'web')         | Should Be $true
+        ($svc -contains 'chrome')      | Should Be $true
+        ($svc -contains 'meilisearch') | Should Be $true
+        # 'data' is a volume key, not a service — must NOT appear:
+        ($svc -contains 'data')        | Should Be $false
+    }
+}

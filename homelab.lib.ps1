@@ -11,3 +11,18 @@ function Get-HomelabApps {
     }
     return ,$apps
 }
+
+function Get-AppServices {
+    param([Parameter(Mandatory)][string]$AppComposePath)
+    $services = @()
+    $inServices = $false
+    foreach ($line in Get-Content -LiteralPath $AppComposePath) {
+        if ($line -match '^services:\s*$') { $inServices = $true; continue }
+        # A new top-level key (column 0, not whitespace, not a comment) ends the block.
+        if ($line -match '^[^\s#]') { $inServices = $false }
+        if ($inServices -and $line -match '^  ([A-Za-z0-9._-]+):\s*$') {
+            $services += $Matches[1]
+        }
+    }
+    return ,$services
+}
