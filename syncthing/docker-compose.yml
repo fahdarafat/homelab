@@ -9,7 +9,8 @@ services:
       PGID: 1000
       TZ: Africa/Cairo
     ports:
-      - 8384:8384            # web UI
+      # Web UI (8384) is no longer published — it's served via Caddy over HTTPS.
+      # The P2P sync + discovery ports below MUST stay published.
       - 22000:22000/tcp      # sync protocol (TCP)
       - 22000:22000/udp      # sync protocol (QUIC)
       - 21027:21027/udp      # local discovery

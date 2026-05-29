@@ -26,6 +26,8 @@ syncthing/data/
 n8n/data/
 activepieces/redisdata/
 ntfy/cache/
+caddy/data/
+caddy/config/
 
 # Local backups (contain secrets + full DB snapshots, incl. password hashes)
 backups/

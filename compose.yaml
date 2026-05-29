@@ -17,6 +17,7 @@
 name: homelab
 
 include:
+  - caddy/docker-compose.yml
   - karakeep/docker-compose.yml
   - memos/docker-compose.yml
   - homarr/docker-compose.yml

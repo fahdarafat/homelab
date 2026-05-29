@@ -1,0 +1,83 @@
+# Caddy reverse proxy — per-app HTTPS over Tailscale.
+#
+# Every app gets its OWN tailnet hostname at the root path (not a subpath), so
+# PWAs, websockets, cookies, and mic/camera access all "just work". Each site
+# binds to its own Tailscale node via the caddy-tailscale plugin; the node's
+# MagicDNS name is "<node>.<your-tailnet>.ts.net" and Caddy provisions a real
+# Let's Encrypt cert for it automatically.
+#
+# {$TS_NET} is substituted from the TS_NET env var (your tailnet domain, e.g.
+# "tailXXXX.ts.net" or your custom name) at config-load time, so the actual
+# domain lives only in the git-ignored .env, never in this tracked file.
+#
+# The Tailscale auth key is read from the TS_AUTHKEY env var automatically.
+{
+	tailscale {
+		# Persist node identities so apps keep stable MagicDNS names across
+		# restarts instead of re-registering (which would burn the auth key
+		# and spawn duplicate devices). state_dir is on the mounted volume.
+		ephemeral false
+		state_dir /data/ts-state
+	}
+}
+
+karakeep.{$TS_NET} {
+	bind tailscale/karakeep
+	reverse_proxy web:3000
+}
+
+memos.{$TS_NET} {
+	bind tailscale/memos
+	reverse_proxy memos:5230
+}
+
+homarr.{$TS_NET} {
+	bind tailscale/homarr
+	reverse_proxy homarr:7575
+}
+
+uptime.{$TS_NET} {
+	bind tailscale/uptime
+	reverse_proxy uptime-kuma:3001
+}
+
+paperless.{$TS_NET} {
+	bind tailscale/paperless
+	reverse_proxy paperless:8000
+}
+
+stirling.{$TS_NET} {
+	bind tailscale/stirling
+	reverse_proxy stirling-pdf:8080
+}
+
+jellyfin.{$TS_NET} {
+	bind tailscale/jellyfin
+	reverse_proxy jellyfin:8096
+}
+
+syncthing.{$TS_NET} {
+	bind tailscale/syncthing
+	reverse_proxy syncthing:8384
+}
+
+n8n.{$TS_NET} {
+	bind tailscale/n8n
+	reverse_proxy n8n:5678
+}
+
+activepieces.{$TS_NET} {
+	bind tailscale/activepieces
+	reverse_proxy activepieces:80
+}
+
+ntfy.{$TS_NET} {
+	bind tailscale/ntfy
+	reverse_proxy ntfy:80
+}
+
+# Glances runs natively on Windows (not in Docker), so reach it on the host.
+glances.{$TS_NET} {
+	bind tailscale/glances
+	reverse_proxy host.docker.internal:61208
+}

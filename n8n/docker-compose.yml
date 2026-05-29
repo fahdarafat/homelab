@@ -5,8 +5,6 @@ services:
     restart: unless-stopped
     depends_on:
       - n8n-postgres
-    ports:
-      - 5678:5678
     env_file:
       - .env
     environment:
