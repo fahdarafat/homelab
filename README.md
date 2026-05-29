@@ -17,7 +17,7 @@ the public internet.
 | [Homarr](https://github.com/homarr-labs/homarr) | Dashboard / home base | 7575 | links to everything + live widgets |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Uptime monitoring | 3001 | per-app up/down + history |
 | [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Document archive (OCR + search) | 8000 | web + PostgreSQL + Redis; drop files in `paperless/consume/` |
-| [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | 8082 | stateless; login disabled (Tailscale-only) |
+| [Stirling-PDF](https://github.com/stirling-tools/stirling-pdf) | PDF toolkit (split/merge/convert…) | 8082 | login enabled; `admin` account, password set on first login |
 | [Jellyfin](https://github.com/jellyfin/jellyfin) | Media server | 8096 | reads `E:\Media` read-only; no HW transcode on Docker Desktop |
 | [Syncthing](https://github.com/syncthing/syncthing) | File sync across devices | 8384 | P2P sync on `22000`; works fine even when not 24/7 |
 | [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |

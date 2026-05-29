@@ -6,8 +6,15 @@ services:
     ports:
       - 8082:8080
     environment:
-      # Single-user, Tailscale-only: no login wall. Set to "true" to enable it.
-      SECURITY_ENABLELOGIN: "false"
+      # Login enabled (required by the Stirling Desktop client). Login/security
+      # features only ship when DISABLE_ADDITIONAL_FEATURES is false.
+      # On a fresh install the account is admin/stirling and Stirling forces a
+      # password change on first login. SECURITY_INITIALLOGIN_* is NOT honored
+      # by this image, so credentials are managed in-app (persisted in config/),
+      # not here. Your current password is recorded in the git-ignored .env.
+      DOCKER_ENABLE_SECURITY: "true"
+      DISABLE_ADDITIONAL_FEATURES: "false"
+      SECURITY_ENABLELOGIN: "true"
       SYSTEM_DEFAULTLOCALE: en-US
       LANGS: en_GB
     volumes:
