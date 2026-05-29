@@ -14,11 +14,10 @@ $ComposeFile = Join-Path $RepoRoot 'compose.yaml'
 function Invoke-Compose {
     param([string[]]$ComposeArgs)
     & docker compose -f $ComposeFile @ComposeArgs
-    return $LASTEXITCODE
 }
 
 function Test-DockerReady {
-    & docker compose version *> $null
+    try { & docker compose version *> $null } catch { return $false }
     return ($LASTEXITCODE -eq 0)
 }
 
@@ -61,11 +60,9 @@ No apps = all apps. '--filter <app>' is accepted as an alias.
 # ---------------------------------------------------------------------------
 
 function Show-HomelabList {
-    $map      = Get-AppServicesMap
-    $appNames = Resolve-AppArgs -RawArgs $rest
-    # Validate filter args (throws on unknown app, matching other verbs):
-    [void](Resolve-Services -AppNames $appNames -AppServices $map)
-    $appsToShow = if ($appNames.Count -gt 0) { $appNames } else { $map.Keys | Sort-Object }
+    param([hashtable]$AppMap, [string[]]$RawArgs = @())
+    $appNames   = Resolve-AppArgs -RawArgs $RawArgs
+    $appsToShow = if ($appNames.Count -gt 0) { $appNames } else { $AppMap.Keys | Sort-Object }
 
     $tsNet = Get-EnvValue -EnvPath (Join-Path $RepoRoot 'caddy\.env') -Key 'TS_NET'
     $urls  = Get-ServiceUrls -CaddyfilePath (Join-Path $RepoRoot 'caddy\Caddyfile') -TsNet $tsNet
@@ -80,7 +77,7 @@ function Show-HomelabList {
     }
 
     foreach ($app in $appsToShow) {
-        $services = $map[$app]
+        $services = $AppMap[$app]
         # App URL = the first of its services that Caddy proxies.
         $appUrl = $null
         foreach ($s in $services) { if ($urls.ContainsKey($s)) { $appUrl = $urls[$s]; break } }
@@ -122,7 +119,7 @@ function homelab { & '$scriptPath' @args }
 Register-ArgumentCompleter -CommandName homelab -ScriptBlock {
     param(`$wordToComplete, `$commandAst, `$cursorPosition)
     `$verbs = 'up','down','list','logs','restart','update','build','install','uninstall','help'
-    if (`$commandAst.CommandElements.Count -le 2) {
+    if (`$commandAst.CommandElements.Count -le 1 -or (`$commandAst.CommandElements.Count -eq 2 -and `$wordToComplete -ne '')) {
         `$verbs | Where-Object { `$_ -like "`$wordToComplete*" } |
             ForEach-Object { [System.Management.Automation.CompletionResult]::new(`$_, `$_, 'ParameterValue', `$_) }
     }
@@ -151,7 +148,7 @@ function Install-Homelab {
     $pattern = [regex]::Escape($script:HomelabMarkerStart) + '.*?' + [regex]::Escape($script:HomelabMarkerEnd)
     $cleaned = [regex]::Replace($existing, $pattern, '', 'Singleline').TrimEnd()
     $newContent = if ($cleaned) { "$cleaned`r`n`r`n$block`r`n" } else { "$block`r`n" }
-    Set-Content -LiteralPath $profilePath -Value $newContent -Encoding UTF8
+    [System.IO.File]::WriteAllText($profilePath, $newContent, (New-Object System.Text.UTF8Encoding($false)))
 
     Write-Host "Installed 'homelab' into $profilePath" -ForegroundColor Green
     Write-Host "Open a new PowerShell session (or run: . `$PROFILE) to use it." -ForegroundColor Green
@@ -163,7 +160,7 @@ function Uninstall-Homelab {
     $existing = Get-Content -LiteralPath $profilePath -Raw
     $pattern = [regex]::Escape($script:HomelabMarkerStart) + '.*?' + [regex]::Escape($script:HomelabMarkerEnd)
     $cleaned = [regex]::Replace($existing, $pattern, '', 'Singleline').TrimEnd()
-    Set-Content -LiteralPath $profilePath -Value ($cleaned + "`r`n") -Encoding UTF8
+    [System.IO.File]::WriteAllText($profilePath, ($cleaned + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "Removed 'homelab' from $profilePath" -ForegroundColor Green
 }
 
@@ -194,23 +191,24 @@ catch {
 }
 
 switch ($verb) {
-    'up'      { exit (Invoke-Compose (@('up','-d')               + $services)) }
-    'restart' { exit (Invoke-Compose (@('restart')               + $services)) }
-    'logs'    { exit (Invoke-Compose (@('logs','-f','--tail=100') + $services)) }
+    'up'      { Invoke-Compose (@('up','-d') + $services);              exit $LASTEXITCODE }
+    'restart' { Invoke-Compose (@('restart') + $services);             exit $LASTEXITCODE }
+    'logs'    { Invoke-Compose (@('logs','-f','--tail=100') + $services); exit $LASTEXITCODE }
     'update'  {
-        $c = Invoke-Compose (@('pull') + $services)
-        if ($c -ne 0) { exit $c }
-        exit (Invoke-Compose (@('up','-d') + $services))
+        Invoke-Compose (@('pull') + $services)
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Invoke-Compose (@('up','-d') + $services); exit $LASTEXITCODE
     }
     'build'   {
-        $c = Invoke-Compose (@('build') + $services)
-        if ($c -ne 0) { exit $c }
-        exit (Invoke-Compose (@('up','-d') + $services))
+        Invoke-Compose (@('build') + $services)
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Invoke-Compose (@('up','-d') + $services); exit $LASTEXITCODE
     }
     'down'    {
-        if ($services.Count -eq 0) { exit (Invoke-Compose @('down')) }
-        else { exit (Invoke-Compose (@('rm','-s','-f') + $services)) }
+        if ($services.Count -eq 0) { Invoke-Compose @('down') }
+        else { Invoke-Compose (@('rm','-s','-f') + $services) }
+        exit $LASTEXITCODE
     }
-    'list'    { Show-HomelabList; exit 0 }
+    'list'    { Show-HomelabList -AppMap $map -RawArgs $rest; exit 0 }
     default   { Write-Host "Unknown command '$verb'." -ForegroundColor Yellow; Show-Usage; exit 1 }
 }
