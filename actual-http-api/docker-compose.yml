@@ -1,0 +1,21 @@
+services:
+  actual-http-api:
+    image: jhonderson/actual-http-api:latest
+    container_name: actual-http-api
+    restart: unless-stopped
+    depends_on:
+      - actual
+    env_file:
+      - .env
+    environment:
+      # Reach the Actual server by container name on the shared homelab network.
+      ACTUAL_SERVER_URL: "http://actual:5006/"
+      ACTUAL_DATA_DIR: "/data"
+      PORT: "5007"
+      # ACTUAL_SERVER_PASSWORD and API_KEY come from .env
+    volumes:
+      - actual_http_api_data:/data
+
+volumes:
+  actual_http_api_data:
+    name: actual_http_api_data
