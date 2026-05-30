@@ -16,6 +16,10 @@ services:
       RUN_MIGRATIONS: "1"
       # Provision the admin account from ADMIN_USERNAME/ADMIN_PASSWORD on first boot.
       CREATE_ADMIN: "1"
+      # Allow fetching feeds from hosts on the tailnet. Miniflux blocks private
+      # networks by default (SSRF protection), and Tailscale's 100.64.0.0/10 CGNAT
+      # range counts as private — so feeds on *.ts.net are refused without this.
+      FETCHER_ALLOW_PRIVATE_NETWORKS: "1"
       TZ: Africa/Cairo
 
   miniflux-postgres:
