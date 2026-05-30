@@ -1,0 +1,45 @@
+services:
+  miniflux:
+    image: miniflux/miniflux:latest
+    container_name: miniflux
+    restart: unless-stopped
+    depends_on:
+      # Miniflux exits if Postgres isn't accepting connections yet — wait for the
+      # db's healthcheck before starting.
+      miniflux-postgres:
+        condition: service_healthy
+    env_file:
+      # DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD, BASE_URL — secrets/host live in .env.
+      - .env
+    environment:
+      # Create/upgrade the schema on start (idempotent).
+      RUN_MIGRATIONS: "1"
+      # Provision the admin account from ADMIN_USERNAME/ADMIN_PASSWORD on first boot.
+      CREATE_ADMIN: "1"
+      TZ: Africa/Cairo
+
+  miniflux-postgres:
+    image: postgres:16
+    container_name: miniflux-postgres
+    restart: unless-stopped
+    env_file:
+      # POSTGRES_PASSWORD lives in .env (must match the password inside DATABASE_URL).
+      - .env
+    environment:
+      POSTGRES_DB: miniflux
+      POSTGRES_USER: miniflux
+    volumes:
+      - miniflux_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U miniflux -d miniflux"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  # Unique key AND pinned name: the key must be unique across all files merged by the
+  # root compose.yaml `include`, or the volumes collapse into one shared volume. The
+  # pinned name keeps data stable across standalone vs merged runs.
+  miniflux_pgdata:
+    name: miniflux_pgdata

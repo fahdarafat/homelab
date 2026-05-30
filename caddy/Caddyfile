@@ -31,6 +31,11 @@ memos.{$TS_NET} {
 	reverse_proxy memos:5230
 }
 
+rss.{$TS_NET} {
+	bind tailscale/rss
+	reverse_proxy miniflux:8080
+}
+
 homarr.{$TS_NET} {
 	bind tailscale/homarr
 	reverse_proxy homarr:7575

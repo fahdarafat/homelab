@@ -16,6 +16,7 @@ Every app is reached over HTTPS at its own Tailscale hostname, `https://<HTTPS h
 | App | Purpose | HTTPS host | Notes |
 |-----|---------|-----------|-------|
 | [Karakeep](https://github.com/karakeep-app/karakeep) | Bookmarks / read-it-later | `karakeep` | web + headless Chrome + Meilisearch |
+| [Miniflux](https://github.com/miniflux/v2) | RSS / feed reader | `rss` | web + PostgreSQL; admin via `.env`, strong REST API |
 | [Memos](https://github.com/usememos/memos) | Notes | `memos` | pinned to `:stable` (currently v0.29.x) |
 | [Homarr](https://github.com/homarr-labs/homarr) | Dashboard / home base | `homarr` | links to everything + live widgets |
 | [Uptime Kuma](https://github.com/louislam/uptime-kuma) | Uptime monitoring | `uptime` | per-app up/down + history |
@@ -161,8 +162,8 @@ docker compose logs -f caddy        # watch the nodes register
 
 Within a minute or so the new devices appear in your Tailscale admin console and the apps are live at
 `https://memos.<tailnet>.ts.net`, `https://karakeep.<tailnet>.ts.net`, etc. (hostnames:
-`karakeep`, `memos`, `homarr`, `uptime`, `paperless`, `stirling`, `jellyfin`, `syncthing`, `n8n`,
-`activepieces`, `ntfy`, `glances`).
+`karakeep`, `rss`, `memos`, `homarr`, `uptime`, `paperless`, `stirling`, `jellyfin`, `syncthing`,
+`n8n`, `activepieces`, `ntfy`, `glances`).
 
 > **Per-app canonical URL:** apps that bake in their own base URL must point at the HTTPS hostname, or
 > logins/redirects/CSRF break. Set these in each app's `.env` to `https://<app>.<tailnet>.ts.net`:
@@ -199,6 +200,7 @@ homelab/
 ├─ compose.yaml   root entry point — includes every app (docker compose up -d)
 ├─ caddy/         Dockerfile, Caddyfile, docker-compose.yml, .env(.example)
 ├─ karakeep/      docker-compose.yml, .env(.example)
+├─ miniflux/      docker-compose.yml, .env(.example)
 ├─ memos/         docker-compose.yml
 ├─ homarr/        docker-compose.yml, .env(.example)
 ├─ uptime-kuma/   docker-compose.yml
