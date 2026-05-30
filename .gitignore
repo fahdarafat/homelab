@@ -38,3 +38,6 @@ actual-bridge/node_modules/
 # Logs
 *.log
 .playwright-mcp
+
+# Internal planning/design docs — kept local, not published
+docs/

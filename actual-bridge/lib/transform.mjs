@@ -134,7 +134,7 @@ export function buildParsePrompt(rawText, categoryNames) {
     '- last4: the last 4 digits of the card/account, as a string, or "" if absent',
     '- merchant: the merchant/payee name, or "" if absent (for transfers use "Transfer")',
     '- bank_ref: the bank reference id if present, else ""',
-    '- bank: "Bank A", "Bank B", or "" if unknown',
+    '- bank: the issuing bank name, or "" if unknown',
     `- category: choose the single best match from this list, or "" if unsure: [${cats}]`,
     '- confidence: number 0..1 for how confident you are in the extraction',
     'Do not invent categories outside the list. Output JSON only, no prose.',
