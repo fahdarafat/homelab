@@ -36,3 +36,10 @@ export function mapLast4ToAccount(last4, accountMap) {
   const key = String(last4).trim();
   return Object.prototype.hasOwnProperty.call(accountMap, key) ? accountMap[key] : null;
 }
+
+export function mapCategory(name, categories) {
+  if (!name || String(name).trim() === '') return null;
+  const target = String(name).trim().toLowerCase();
+  const hit = categories.find((c) => String(c.name).trim().toLowerCase() === target);
+  return hit ? hit.id : null;
+}

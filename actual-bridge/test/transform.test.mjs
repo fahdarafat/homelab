@@ -65,3 +65,17 @@ test('mapLast4ToAccount returns null for unknown', () => {
   assert.equal(mapLast4ToAccount('0000', MAP), null);
   assert.equal(mapLast4ToAccount(null, MAP), null);
 });
+
+import { mapCategory } from '../lib/transform.mjs';
+
+const CATS = [{ id: 'c1', name: 'Groceries' }, { id: 'c2', name: 'Dining Out' }];
+
+test('mapCategory matches case-insensitively', () => {
+  assert.equal(mapCategory('groceries', CATS), 'c1');
+  assert.equal(mapCategory('Dining Out', CATS), 'c2');
+});
+test('mapCategory returns null for blank or unknown', () => {
+  assert.equal(mapCategory('', CATS), null);
+  assert.equal(mapCategory(null, CATS), null);
+  assert.equal(mapCategory('Nonexistent', CATS), null);
+});
