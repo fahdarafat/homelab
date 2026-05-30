@@ -21,6 +21,8 @@ services:
       # Served over plain http behind Tailscale (not https), so the auth cookie
       # must not be marked Secure or login is impossible.
       N8N_SECURE_COOKIE: "false"
+      # Allow Code nodes to read pipeline config via $env (account map, threshold…).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       GENERIC_TIMEZONE: Africa/Cairo
       TZ: Africa/Cairo
     volumes:
