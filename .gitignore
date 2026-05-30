@@ -32,6 +32,9 @@ caddy/config/
 # Local backups (contain secrets + full DB snapshots, incl. password hashes)
 backups/
 
+# Node modules
+actual-bridge/node_modules/
+
 # Logs
 *.log
 .playwright-mcp
