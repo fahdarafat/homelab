@@ -79,3 +79,25 @@ test('mapCategory returns null for blank or unknown', () => {
   assert.equal(mapCategory(null, CATS), null);
   assert.equal(mapCategory('Nonexistent', CATS), null);
 });
+
+import { validateParseResult } from '../lib/transform.mjs';
+
+const GOOD = {
+  msg_type: 'purchase', direction: 'debit', amount: 390, currency: 'EGP',
+  date: '2026-05-27', last4: '9012', merchant: 'Talabat', category: 'Dining Out', confidence: 0.95,
+};
+
+test('validateParseResult accepts a well-formed object', () => {
+  assert.equal(validateParseResult(GOOD).ok, true);
+});
+test('validateParseResult rejects missing required fields', () => {
+  const bad = { ...GOOD }; delete bad.amount;
+  assert.equal(validateParseResult(bad).ok, false);
+});
+test('validateParseResult rejects non-numeric amount/confidence', () => {
+  assert.equal(validateParseResult({ ...GOOD, amount: 'x' }).ok, false);
+  assert.equal(validateParseResult({ ...GOOD, confidence: 'high' }).ok, false);
+});
+test('validateParseResult rejects bad date', () => {
+  assert.equal(validateParseResult({ ...GOOD, date: '27/05/2026' }).ok, false);
+});

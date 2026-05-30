@@ -43,3 +43,21 @@ export function mapCategory(name, categories) {
   const hit = categories.find((c) => String(c.name).trim().toLowerCase() === target);
   return hit ? hit.id : null;
 }
+
+export function validateParseResult(parsed) {
+  if (!parsed || typeof parsed !== 'object') return { ok: false, reason: 'not_object' };
+  const reqStr = ['msg_type', 'direction', 'currency', 'date'];
+  for (const f of reqStr) {
+    if (typeof parsed[f] !== 'string' || parsed[f].trim() === '') {
+      return { ok: false, reason: `missing_${f}` };
+    }
+  }
+  if (typeof parsed.amount !== 'number' || !Number.isFinite(parsed.amount)) {
+    return { ok: false, reason: 'bad_amount' };
+  }
+  if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) {
+    return { ok: false, reason: 'bad_confidence' };
+  }
+  if (!validateIsoDate(parsed.date)) return { ok: false, reason: 'bad_date' };
+  return { ok: true };
+}
