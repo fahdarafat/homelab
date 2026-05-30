@@ -1,6 +1,11 @@
 // Pure transform helpers for the SMS → Actual Budget pipeline.
-// This file is the source of truth; its contents are pasted into the n8n
-// "Transform & Route" Code node (see actual-bridge/README.md).
+// This file is the source of truth; its functions are adapted into the n8n
+// "Transform & Route" Code node (see actual-bridge/README.md). The Code node
+// runs CommonJS in a sandbox, so top-level import/export are syntax errors
+// there. When pasting, mechanically edit each function: (a) remove the
+// `export` keyword from every `function`, and (b) replace
+// `import { createHash } from 'node:crypto'` with
+// `const { createHash } = require('crypto')`.
 import { createHash } from 'node:crypto';
 
 export function validateIsoDate(date) {
@@ -62,6 +67,8 @@ export function validateParseResult(parsed) {
   return { ok: true };
 }
 
+const BASE_CURRENCY = 'EGP';
+
 const IMPORTABLE_TYPES = new Set(['purchase', 'transfer']);
 
 export function decideRoute(parsed, ctx) {
@@ -73,7 +80,7 @@ export function decideRoute(parsed, ctx) {
   if (!IMPORTABLE_TYPES.has(parsed.msg_type)) reasons.push('unknown_msg_type');
   if (!ctx.accountId) reasons.push('unknown_last4');
   if (parsed.confidence < ctx.threshold) reasons.push('low_confidence');
-  if (parsed.currency !== 'EGP' && (ctx.rate === null || ctx.rate === undefined)) {
+  if (parsed.currency !== BASE_CURRENCY && (ctx.rate === null || ctx.rate === undefined)) {
     reasons.push('fx_failed');
   }
   return { action: reasons.length === 0 ? 'import' : 'review', reasons };
@@ -83,18 +90,20 @@ export function buildActualTransaction(parsed, ctx) {
   if (!ctx.accountId) return null;
   if (!validateParseResult(parsed).ok) return null;
 
-  const isForeign = parsed.currency !== 'EGP';
+  const isForeign = parsed.currency !== BASE_CURRENCY;
   if (isForeign && (ctx.rate === null || ctx.rate === undefined)) return null;
 
   const minor = isForeign
     ? convertToEgp(parsed.amount, ctx.rate, ctx.markup)
     : toMinorUnits(parsed.amount);
   // All handled message types are outflows.
-  const amount = -Math.abs(minor);
+  const amount = minor === 0 ? 0 : -Math.abs(minor);
 
-  let notes = `via SMS · ${parsed.bank || ''} · card *${parsed.last4}`.replace(' ·  · ', ' · ');
+  const parts = ['via SMS', parsed.bank, parsed.last4 ? `card *${parsed.last4}` : null]
+    .filter((p) => p && String(p).trim() !== '');
+  let notes = parts.join(' · ');
   if (isForeign) {
-    notes += ` · orig ${parsed.currency} ${Number(parsed.amount).toFixed(2)} @ ${ctx.rate}×${(1 + ctx.markup)}`;
+    notes += ` · orig ${parsed.currency} ${Number(parsed.amount).toFixed(2)} @ ${Number(ctx.rate)}×${(1 + Number(ctx.markup)).toFixed(4)}`;
   }
 
   return {

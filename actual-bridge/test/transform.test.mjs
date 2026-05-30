@@ -101,6 +101,11 @@ test('validateParseResult rejects non-numeric amount/confidence', () => {
 test('validateParseResult rejects bad date', () => {
   assert.equal(validateParseResult({ ...GOOD, date: '27/05/2026' }).ok, false);
 });
+test('validateParseResult enforces confidence bounds', () => {
+  assert.equal(validateParseResult({ ...GOOD, confidence: 1 }).ok, true);
+  assert.equal(validateParseResult({ ...GOOD, confidence: 1.5 }).ok, false);
+  assert.equal(validateParseResult({ ...GOOD, confidence: -0.1 }).ok, false);
+});
 
 import { decideRoute } from '../lib/transform.mjs';
 
@@ -137,6 +142,12 @@ test('foreign currency WITHOUT rate -> review', () => {
   assert.equal(r.action, 'review');
   assert.ok(r.reasons.includes('fx_failed'));
 });
+test('multi-reason: low confidence AND unknown msg_type -> review with both reasons', () => {
+  const r = decideRoute({ ...base, msg_type: 'refund', confidence: 0.5 }, ctx);
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('low_confidence'));
+  assert.ok(r.reasons.includes('unknown_msg_type'));
+});
 test('parse-invalid input -> review with parse_failed', () => {
   const r = decideRoute({ ...base, amount: 'x' }, ctx);
   assert.equal(r.action, 'review');
@@ -168,7 +179,7 @@ test('converts foreign currency and notes the original', () => {
   const t = buildActualTransaction(usd, { accountId: 'acc', rate: 50, markup: 0.03, categories: CATS2, rawText: 'raw' });
   assert.equal(t.amount, -29355);
   assert.equal(t.category, null);
-  assert.match(t.notes, /orig USD 5.70 @ 50/);
+  assert.match(t.notes, /orig USD 5\.70 @ 50×1\.0300/);
 });
 test('uses bank_ref for imported_id when present', () => {
   const t = buildActualTransaction({ ...egp, bank_ref: 'TXN0001' }, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
@@ -178,6 +189,10 @@ test('returns null when foreign currency has no rate', () => {
   const usd = { ...egp, currency: 'USD' };
   const t = buildActualTransaction(usd, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
   assert.equal(t, null);
+});
+test('empty bank collapses notes separators (no card *null)', () => {
+  const t = buildActualTransaction({ ...egp, bank: '' }, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
+  assert.match(t.notes, /^via SMS · card \*9012$/);
 });
 test('returns null when no accountId', () => {
   assert.equal(buildActualTransaction(egp, { accountId: null, rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' }), null);
