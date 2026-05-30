@@ -78,3 +78,34 @@ export function decideRoute(parsed, ctx) {
   }
   return { action: reasons.length === 0 ? 'import' : 'review', reasons };
 }
+
+export function buildActualTransaction(parsed, ctx) {
+  if (!ctx.accountId) return null;
+  if (!validateParseResult(parsed).ok) return null;
+
+  const isForeign = parsed.currency !== 'EGP';
+  if (isForeign && (ctx.rate === null || ctx.rate === undefined)) return null;
+
+  const minor = isForeign
+    ? convertToEgp(parsed.amount, ctx.rate, ctx.markup)
+    : toMinorUnits(parsed.amount);
+  // All handled message types are outflows.
+  const amount = -Math.abs(minor);
+
+  let notes = `via SMS · ${parsed.bank || ''} · card *${parsed.last4}`.replace(' ·  · ', ' · ');
+  if (isForeign) {
+    notes += ` · orig ${parsed.currency} ${Number(parsed.amount).toFixed(2)} @ ${ctx.rate}×${(1 + ctx.markup)}`;
+  }
+
+  return {
+    account: ctx.accountId,
+    date: parsed.date,
+    amount,
+    payee_name: parsed.merchant || 'Unknown',
+    imported_payee: parsed.merchant || '',
+    category: mapCategory(parsed.category, ctx.categories),
+    notes,
+    imported_id: buildImportedId(parsed.bank_ref, ctx.rawText),
+    cleared: false,
+  };
+}

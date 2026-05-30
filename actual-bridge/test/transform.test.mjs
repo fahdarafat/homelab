@@ -142,3 +142,43 @@ test('parse-invalid input -> review with parse_failed', () => {
   assert.equal(r.action, 'review');
   assert.ok(r.reasons.includes('parse_failed'));
 });
+
+import { buildActualTransaction } from '../lib/transform.mjs';
+
+const CATS2 = [{ id: 'c2', name: 'Dining Out' }];
+const egp = {
+  msg_type: 'purchase', direction: 'debit', amount: 390, currency: 'EGP',
+  date: '2026-05-27', last4: '9012', merchant: 'Talabat', category: 'Dining Out',
+  confidence: 0.95, bank: 'Bank B', bank_ref: null,
+};
+
+test('builds an EGP debit transaction with negative amount', () => {
+  const t = buildActualTransaction(egp, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
+  assert.equal(t.account, 'acc');
+  assert.equal(t.amount, -39000);
+  assert.equal(t.date, '2026-05-27');
+  assert.equal(t.payee_name, 'Talabat');
+  assert.equal(t.category, 'c2');
+  assert.equal(t.cleared, false);
+  assert.match(t.imported_id, /^sms:/);
+  assert.match(t.notes, /via SMS · Bank B · card \*9012/);
+});
+test('converts foreign currency and notes the original', () => {
+  const usd = { ...egp, currency: 'USD', amount: 5.70, merchant: 'OPENAI', last4: '1234', bank: 'Bank A', category: '' };
+  const t = buildActualTransaction(usd, { accountId: 'acc', rate: 50, markup: 0.03, categories: CATS2, rawText: 'raw' });
+  assert.equal(t.amount, -29355);
+  assert.equal(t.category, null);
+  assert.match(t.notes, /orig USD 5.70 @ 50/);
+});
+test('uses bank_ref for imported_id when present', () => {
+  const t = buildActualTransaction({ ...egp, bank_ref: 'TXN0001' }, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
+  assert.equal(t.imported_id, 'ref:TXN0001');
+});
+test('returns null when foreign currency has no rate', () => {
+  const usd = { ...egp, currency: 'USD' };
+  const t = buildActualTransaction(usd, { accountId: 'acc', rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' });
+  assert.equal(t, null);
+});
+test('returns null when no accountId', () => {
+  assert.equal(buildActualTransaction(egp, { accountId: null, rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' }), null);
+});
