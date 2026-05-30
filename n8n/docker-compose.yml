@@ -23,6 +23,9 @@ services:
       N8N_SECURE_COOKIE: "false"
       # Allow Code nodes to read pipeline config via $env (account map, threshold…).
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # The Code node runs in the task-runner sandbox, which disallows require()
+      # of Node builtins by default; allow 'crypto' (imported_id hash in Transform).
+      NODE_FUNCTION_ALLOW_BUILTIN: "crypto"
       GENERIC_TIMEZONE: Africa/Cairo
       TZ: Africa/Cairo
     volumes:
