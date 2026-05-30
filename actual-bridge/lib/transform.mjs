@@ -30,3 +30,9 @@ export function buildImportedId(bankRef, rawText) {
   const hash = createHash('sha256').update(String(rawText)).digest('hex').slice(0, 16);
   return `sms:${hash}`;
 }
+
+export function mapLast4ToAccount(last4, accountMap) {
+  if (last4 === null || last4 === undefined) return null;
+  const key = String(last4).trim();
+  return Object.prototype.hasOwnProperty.call(accountMap, key) ? accountMap[key] : null;
+}

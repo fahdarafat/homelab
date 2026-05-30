@@ -50,3 +50,18 @@ test('buildImportedId hashes raw text when no reference', () => {
 test('buildImportedId is stable and collision-resistant per text', () => {
   assert.notEqual(buildImportedId(null, 'text A'), buildImportedId(null, 'text B'));
 });
+
+import { mapLast4ToAccount } from '../lib/transform.mjs';
+
+const MAP = { '1234': 'acc-hsbc', '5678': 'acc-cib', '9012': 'acc-cib-debit' };
+
+test('mapLast4ToAccount resolves a known last-4', () => {
+  assert.equal(mapLast4ToAccount('1234', MAP), 'acc-hsbc');
+});
+test('mapLast4ToAccount tolerates numeric input', () => {
+  assert.equal(mapLast4ToAccount(5678, MAP), 'acc-cib');
+});
+test('mapLast4ToAccount returns null for unknown', () => {
+  assert.equal(mapLast4ToAccount('0000', MAP), null);
+  assert.equal(mapLast4ToAccount(null, MAP), null);
+});
