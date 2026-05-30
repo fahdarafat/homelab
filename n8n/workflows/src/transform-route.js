@@ -55,7 +55,9 @@ function buildActualTransaction(p, ctx) {
   if (isForeign && (ctx.rate === null || ctx.rate === undefined)) return null;
   const minor = isForeign ? convertToEgp(p.amount, ctx.rate, ctx.markup) : toMinorUnits(p.amount);
   const amount = minor === 0 ? 0 : -Math.abs(minor);
-  const parts = ['via SMS', p.bank, p.last4 ? `card *${p.last4}` : null].filter((x) => x && String(x).trim() !== '');
+  // Bank name intentionally omitted: SMS rarely names the bank (LLM would guess wrong);
+  // the destination Actual account already identifies it.
+  const parts = ['via SMS', p.last4 ? `card *${p.last4}` : null].filter((x) => x && String(x).trim() !== '');
   let notes = parts.join(' · ');
   if (isForeign) notes += ` · orig ${p.currency} ${Number(p.amount).toFixed(2)} @ ${Number(ctx.rate)}×${(1 + Number(ctx.markup)).toFixed(4)}`;
   return {

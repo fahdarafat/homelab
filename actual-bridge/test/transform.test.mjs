@@ -172,7 +172,7 @@ test('builds an EGP debit transaction with negative amount', () => {
   assert.equal(t.category, 'c2');
   assert.equal(t.cleared, false);
   assert.match(t.imported_id, /^sms:/);
-  assert.match(t.notes, /via SMS · Bank B · card \*9012/);
+  assert.match(t.notes, /^via SMS · card \*9012$/);
 });
 test('converts foreign currency and notes the original', () => {
   const usd = { ...egp, currency: 'USD', amount: 5.70, merchant: 'OPENAI', last4: '1234', bank: 'Bank A', category: '' };

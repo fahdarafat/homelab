@@ -99,7 +99,9 @@ export function buildActualTransaction(parsed, ctx) {
   // All handled message types are outflows.
   const amount = minor === 0 ? 0 : -Math.abs(minor);
 
-  const parts = ['via SMS', parsed.bank, parsed.last4 ? `card *${parsed.last4}` : null]
+  // Bank name is intentionally NOT included: the SMS rarely names the bank, so the
+  // LLM would guess (often wrong); the destination Actual account already identifies it.
+  const parts = ['via SMS', parsed.last4 ? `card *${parsed.last4}` : null]
     .filter((p) => p && String(p).trim() !== '');
   let notes = parts.join(' · ');
   if (isForeign) {
