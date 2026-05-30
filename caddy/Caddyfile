@@ -81,6 +81,11 @@ ntfy.{$TS_NET} {
 	reverse_proxy ntfy:80
 }
 
+budget.{$TS_NET} {
+	bind tailscale/budget
+	reverse_proxy actual:5006
+}
+
 # Glances runs natively on Windows (not in Docker), so reach it on the host.
 glances.{$TS_NET} {
 	bind tailscale/glances

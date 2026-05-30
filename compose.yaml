@@ -31,3 +31,5 @@ include:
   - n8n/docker-compose.yml
   - activepieces/docker-compose.yml
   - ntfy/docker-compose.yml
+  - actual/docker-compose.yml
+  - actual-http-api/docker-compose.yml
