@@ -20,3 +20,18 @@ test('validateIsoDate rejects empty/garbage', () => {
   assert.equal(validateIsoDate(''), false);
   assert.equal(validateIsoDate(null), false);
 });
+
+import { toMinorUnits, convertToEgp } from '../lib/transform.mjs';
+
+test('toMinorUnits converts EGP major to integer minor units', () => {
+  assert.equal(toMinorUnits(390.00), 39000);
+  assert.equal(toMinorUnits(1339.5), 133950);
+  assert.equal(toMinorUnits(0.1 + 0.2), 30); // float-safety: 0.30 -> 30
+});
+test('convertToEgp applies rate and markup, returns EGP minor units', () => {
+  // 5.70 USD * 50 EGP/USD * 1.03 markup = 293.55 EGP -> 29355 minor
+  assert.equal(convertToEgp(5.70, 50, 0.03), 29355);
+});
+test('convertToEgp with zero markup', () => {
+  assert.equal(convertToEgp(10, 50, 0), 50000);
+});

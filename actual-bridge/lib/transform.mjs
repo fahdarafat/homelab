@@ -12,3 +12,13 @@ export function validateIsoDate(date) {
   // Reject values that JS "rolls over" (e.g. 2026-13-40 -> next year).
   return d.toISOString().slice(0, 10) === date;
 }
+
+export function toMinorUnits(amount) {
+  // Round to cents first to avoid float artifacts (e.g. 0.30000000000000004).
+  return Math.round(Number(amount) * 100);
+}
+
+export function convertToEgp(amount, rate, markup) {
+  const egpMajor = Number(amount) * Number(rate) * (1 + Number(markup));
+  return Math.round(egpMajor * 100);
+}
