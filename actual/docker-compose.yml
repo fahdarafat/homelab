@@ -1,0 +1,14 @@
+services:
+  actual:
+    image: actualbudget/actual-server:latest
+    container_name: actual
+    restart: unless-stopped
+    environment:
+      TZ: Africa/Cairo
+    volumes:
+      - actual_data:/data
+
+volumes:
+  # Unique key AND pinned name — see miniflux/docker-compose.yml for the why.
+  actual_data:
+    name: actual_data
