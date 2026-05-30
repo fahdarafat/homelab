@@ -27,6 +27,8 @@ Every app is reached over HTTPS at its own Tailscale hostname, `https://<HTTPS h
 | [n8n](https://github.com/n8n-io/n8n) | Workflow automation | `n8n` | web + PostgreSQL |
 | [Activepieces](https://github.com/activepieces/activepieces) | Workflow automation (no-code) | `activepieces` | web + PostgreSQL + Redis |
 | [ntfy](https://github.com/binwiederhier/ntfy) | Push notifications (HTTP → phone) | `ntfy` | automation/alert sink; iOS instant push via `ntfy.sh` upstream |
+| [Actual Budget](https://github.com/actualbudget/actual) | Personal finance / budgeting | `budget` | server + web UI; SMS → Actual pipeline target |
+| [actual-http-api](https://github.com/jhonderson/actual-http-api) | REST bridge to Actual | — | internal only (no Caddy route); n8n imports transactions via `x-api-key` |
 | [Diun](https://github.com/crazy-max/diun) | Image-update notifier | — | no UI; daily check, logs only (`docker compose logs diun`) |
 | [Glances](https://github.com/nicolargo/glances) | System metrics (CPU/RAM/GPU) | `glances` | **native Windows**, not Docker; Caddy proxies to the host |
 | [Caddy](https://caddyserver.com/) | Reverse proxy → per-app HTTPS | — | terminates TLS for every app (see [HTTPS](#https-per-app-over-tailscale)) |
