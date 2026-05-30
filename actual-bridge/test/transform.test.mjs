@@ -35,3 +35,18 @@ test('convertToEgp applies rate and markup, returns EGP minor units', () => {
 test('convertToEgp with zero markup', () => {
   assert.equal(convertToEgp(10, 50, 0), 50000);
 });
+
+import { buildImportedId } from '../lib/transform.mjs';
+
+test('buildImportedId uses the bank reference when present', () => {
+  assert.equal(buildImportedId('TXN0001', 'whatever'), 'ref:TXN0001');
+});
+test('buildImportedId hashes raw text when no reference', () => {
+  const a = buildImportedId(null, 'some sms text');
+  const b = buildImportedId('', 'some sms text');
+  assert.equal(a, b);
+  assert.match(a, /^sms:[0-9a-f]{16}$/);
+});
+test('buildImportedId is stable and collision-resistant per text', () => {
+  assert.notEqual(buildImportedId(null, 'text A'), buildImportedId(null, 'text B'));
+});

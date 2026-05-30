@@ -22,3 +22,11 @@ export function convertToEgp(amount, rate, markup) {
   const egpMajor = Number(amount) * Number(rate) * (1 + Number(markup));
   return Math.round(egpMajor * 100);
 }
+
+export function buildImportedId(bankRef, rawText) {
+  if (bankRef && String(bankRef).trim() !== '') {
+    return `ref:${String(bankRef).trim()}`;
+  }
+  const hash = createHash('sha256').update(String(rawText)).digest('hex').slice(0, 16);
+  return `sms:${hash}`;
+}
