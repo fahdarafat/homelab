@@ -101,3 +101,44 @@ test('validateParseResult rejects non-numeric amount/confidence', () => {
 test('validateParseResult rejects bad date', () => {
   assert.equal(validateParseResult({ ...GOOD, date: '27/05/2026' }).ok, false);
 });
+
+import { decideRoute } from '../lib/transform.mjs';
+
+const base = {
+  msg_type: 'purchase', direction: 'debit', amount: 390, currency: 'EGP',
+  date: '2026-05-27', last4: '9012', merchant: 'Talabat', category: 'Dining Out', confidence: 0.95,
+};
+const ctx = { accountId: 'acc-cib-debit', rate: null, threshold: 0.8 };
+
+test('clean EGP purchase auto-imports', () => {
+  assert.equal(decideRoute(base, ctx).action, 'import');
+});
+test('low confidence -> review', () => {
+  const r = decideRoute({ ...base, confidence: 0.5 }, ctx);
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('low_confidence'));
+});
+test('unknown last4 (no accountId) -> review', () => {
+  const r = decideRoute(base, { ...ctx, accountId: null });
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('unknown_last4'));
+});
+test('unknown msg_type -> review', () => {
+  const r = decideRoute({ ...base, msg_type: 'refund' }, ctx);
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('unknown_msg_type'));
+});
+test('foreign currency WITH rate auto-imports', () => {
+  const r = decideRoute({ ...base, currency: 'USD' }, { ...ctx, rate: 50 });
+  assert.equal(r.action, 'import');
+});
+test('foreign currency WITHOUT rate -> review', () => {
+  const r = decideRoute({ ...base, currency: 'USD' }, { ...ctx, rate: null });
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('fx_failed'));
+});
+test('parse-invalid input -> review with parse_failed', () => {
+  const r = decideRoute({ ...base, amount: 'x' }, ctx);
+  assert.equal(r.action, 'review');
+  assert.ok(r.reasons.includes('parse_failed'));
+});

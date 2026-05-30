@@ -61,3 +61,20 @@ export function validateParseResult(parsed) {
   if (!validateIsoDate(parsed.date)) return { ok: false, reason: 'bad_date' };
   return { ok: true };
 }
+
+const IMPORTABLE_TYPES = new Set(['purchase', 'transfer']);
+
+export function decideRoute(parsed, ctx) {
+  const reasons = [];
+  const valid = validateParseResult(parsed);
+  if (!valid.ok) {
+    return { action: 'review', reasons: ['parse_failed', valid.reason] };
+  }
+  if (!IMPORTABLE_TYPES.has(parsed.msg_type)) reasons.push('unknown_msg_type');
+  if (!ctx.accountId) reasons.push('unknown_last4');
+  if (parsed.confidence < ctx.threshold) reasons.push('low_confidence');
+  if (parsed.currency !== 'EGP' && (ctx.rate === null || ctx.rate === undefined)) {
+    reasons.push('fx_failed');
+  }
+  return { action: reasons.length === 0 ? 'import' : 'review', reasons };
+}
