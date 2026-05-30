@@ -1,0 +1,259 @@
+{
+  "name": "sms-import",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sms",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "sms-in",
+      "name": "SMS In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "sms-in-webhook"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.ACTUAL_API_URL}}/budgets/{{$env.ACTUAL_BUDGET_SYNC_ID}}/categories",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ACTUAL_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-categories",
+      "name": "Get Categories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// n8n Code node \"Build OpenAI Request\" — Run Once for All Items.\n// Builds the chat-completions request body (avoids fragile inline expressions).\nconst rawText = $('SMS In').first().json.body.raw_text;\nconst names = ($('Get Categories').first().json.data || []).map((c) => c.name).join(', ');\nconst system = [\n  'You extract structured data from a single bank transaction SMS (English or Arabic).',\n  'Return ONLY a JSON object with these keys:',\n  '- msg_type: one of \"purchase\",\"transfer\",\"refund\",\"credit\",\"otp\",\"marketing\",\"unknown\"',\n  '- direction: \"debit\" or \"credit\"',\n  '- amount: number (transaction amount in original currency, no thousands separators)',\n  '- currency: ISO code, e.g. \"EGP\" or \"USD\"',\n  '- date: YYYY-MM-DD (dates in the SMS are day-first, DD/MM or DD-MM)',\n  '- last4: the last 4 digits as a string, or \"\" if absent',\n  '- merchant: merchant/payee name, or \"\" (for transfers use \"Transfer\")',\n  '- bank_ref: bank reference id if present, else \"\"',\n  '- bank: \"Bank A\", \"Bank B\", or \"\" if unknown',\n  '- category: single best match from [' + names + '] or \"\" if unsure (do not invent categories)',\n  '- confidence: number 0..1',\n  'Output JSON only, no prose.',\n].join('\\n');\n\nreturn [{ json: { body: {\n  model: 'gpt-4o-mini',\n  temperature: 0,\n  response_format: { type: 'json_object' },\n  messages: [\n    { role: 'system', content: system },\n    { role: 'user', content: rawText },\n  ],\n} } }];\n"
+      },
+      "id": "build-openai-request",
+      "name": "Build OpenAI Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.OPENAI_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "openai-parse",
+      "name": "OpenAI Parse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// n8n Code node \"Transform & Route\" — Run Once for All Items.\n// Adapted from actual-bridge/lib/transform.mjs (export stripped; require('crypto')).\nconst { createHash } = require('crypto');\nconst BASE_CURRENCY = 'EGP';\nconst IMPORTABLE_TYPES = new Set(['purchase', 'transfer']);\n\nfunction validateIsoDate(date) {\n  if (typeof date !== 'string') return false;\n  if (!/^(\\d{4})-(\\d{2})-(\\d{2})$/.test(date)) return false;\n  const d = new Date(`${date}T00:00:00Z`);\n  if (Number.isNaN(d.getTime())) return false;\n  return d.toISOString().slice(0, 10) === date;\n}\nfunction toMinorUnits(a) { return Math.round(Number(a) * 100); }\nfunction convertToEgp(a, rate, markup) { return Math.round(Number(a) * Number(rate) * (1 + Number(markup)) * 100); }\nfunction buildImportedId(bankRef, rawText) {\n  if (bankRef && String(bankRef).trim() !== '') return `ref:${String(bankRef).trim()}`;\n  return `sms:${createHash('sha256').update(String(rawText)).digest('hex').slice(0, 16)}`;\n}\nfunction mapLast4ToAccount(last4, map) {\n  if (last4 === null || last4 === undefined) return null;\n  const k = String(last4).trim();\n  return Object.prototype.hasOwnProperty.call(map, k) ? map[k] : null;\n}\nfunction mapCategory(name, cats) {\n  if (!name || String(name).trim() === '') return null;\n  const t = String(name).trim().toLowerCase();\n  const hit = cats.find((c) => String(c.name).trim().toLowerCase() === t);\n  return hit ? hit.id : null;\n}\nfunction validateParseResult(p) {\n  if (!p || typeof p !== 'object') return { ok: false, reason: 'not_object' };\n  for (const f of ['msg_type', 'direction', 'currency', 'date']) {\n    if (typeof p[f] !== 'string' || p[f].trim() === '') return { ok: false, reason: `missing_${f}` };\n  }\n  if (typeof p.amount !== 'number' || !Number.isFinite(p.amount)) return { ok: false, reason: 'bad_amount' };\n  if (typeof p.confidence !== 'number' || p.confidence < 0 || p.confidence > 1) return { ok: false, reason: 'bad_confidence' };\n  if (!validateIsoDate(p.date)) return { ok: false, reason: 'bad_date' };\n  return { ok: true };\n}\nfunction decideRoute(p, ctx) {\n  const valid = validateParseResult(p);\n  if (!valid.ok) return { action: 'review', reasons: ['parse_failed', valid.reason] };\n  const reasons = [];\n  if (!IMPORTABLE_TYPES.has(p.msg_type)) reasons.push('unknown_msg_type');\n  if (!ctx.accountId) reasons.push('unknown_last4');\n  if (p.confidence < ctx.threshold) reasons.push('low_confidence');\n  if (p.currency !== BASE_CURRENCY && (ctx.rate === null || ctx.rate === undefined)) reasons.push('fx_failed');\n  return { action: reasons.length === 0 ? 'import' : 'review', reasons };\n}\nfunction buildActualTransaction(p, ctx) {\n  if (!ctx.accountId) return null;\n  if (!validateParseResult(p).ok) return null;\n  const isForeign = p.currency !== BASE_CURRENCY;\n  if (isForeign && (ctx.rate === null || ctx.rate === undefined)) return null;\n  const minor = isForeign ? convertToEgp(p.amount, ctx.rate, ctx.markup) : toMinorUnits(p.amount);\n  const amount = minor === 0 ? 0 : -Math.abs(minor);\n  const parts = ['via SMS', p.bank, p.last4 ? `card *${p.last4}` : null].filter((x) => x && String(x).trim() !== '');\n  let notes = parts.join(' · ');\n  if (isForeign) notes += ` · orig ${p.currency} ${Number(p.amount).toFixed(2)} @ ${Number(ctx.rate)}×${(1 + Number(ctx.markup)).toFixed(4)}`;\n  return {\n    account: ctx.accountId,\n    date: p.date,\n    amount,\n    payee_name: p.merchant || 'Unknown',\n    imported_payee: p.merchant || '',\n    category: mapCategory(p.category, ctx.categories),\n    notes,\n    imported_id: buildImportedId(p.bank_ref, ctx.rawText),\n    cleared: false,\n  };\n}\n\n// ----- orchestration -----\nconst cfg = {\n  accountMap: JSON.parse($env.SMS_ACCOUNT_MAP),\n  threshold: Number($env.SMS_CONF_THRESHOLD),\n  markup: Number($env.SMS_FX_MARKUP),\n};\nconst rawText = $('SMS In').first().json.body.raw_text;\nconst categories = $('Get Categories').first().json.data;\n\nlet parsed;\ntry { parsed = JSON.parse($('OpenAI Parse').first().json.choices[0].message.content); }\ncatch (e) { parsed = null; }\n\nlet rate = null;\nif (parsed && parsed.currency && parsed.currency !== BASE_CURRENCY) {\n  try {\n    const r = await this.helpers.httpRequest({ method: 'GET', url: `https://open.er-api.com/v6/latest/${parsed.currency}`, json: true });\n    rate = (r && r.rates && typeof r.rates.EGP === 'number') ? r.rates.EGP : null;\n  } catch (e) { rate = null; }\n}\n\nconst accountId = parsed ? mapLast4ToAccount(parsed.last4, cfg.accountMap) : null;\nconst safeParsed = parsed || { msg_type: 'unknown', confidence: 0, currency: '', date: '', direction: '', amount: NaN };\nconst route = decideRoute(safeParsed, { accountId, rate, threshold: cfg.threshold });\nconst txn = parsed ? buildActualTransaction(parsed, { accountId, rate, markup: cfg.markup, categories, rawText }) : null;\n\nreturn [{ json: { action: route.action, reasons: route.reasons, txn, parsed: safeParsed, accountId, rate } }];\n"
+      },
+      "id": "transform-route",
+      "name": "Transform & Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{$json.action}}",
+              "rightValue": "import",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route",
+      "name": "Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.ACTUAL_API_URL}}/budgets/{{$env.ACTUAL_BUDGET_SYNC_ID}}/accounts/{{$json.txn.account}}/transactions/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ACTUAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { transactions: [$json.txn], defaultCleared: false } }}",
+        "options": {}
+      },
+      "id": "import-transaction",
+      "name": "Import Transaction",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NTFY_URL}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { topic: $env.NTFY_TOPIC, title: \"SMS needs review: \" + $json.reasons.join(\", \"), message: ($json.parsed.merchant || \"?\") + \" — \" + $json.parsed.currency + \" \" + $json.parsed.amount, actions: $json.txn ? [ { action: \"http\", label: \"Approve\", url: \"http://n8n:5678/webhook/sms-confirm\", method: \"POST\", headers: { \"x-confirm-secret\": $env.SMS_CONFIRM_SECRET }, body: JSON.stringify({ txn: $json.txn }), clear: true } ] : [] } }}",
+        "options": {}
+      },
+      "id": "notify-review-ntfy-",
+      "name": "Notify Review (ntfy)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "SMS In": {
+      "main": [
+        [
+          {
+            "node": "Get Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Categories": {
+      "main": [
+        [
+          {
+            "node": "Build OpenAI Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build OpenAI Request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Parse": {
+      "main": [
+        [
+          {
+            "node": "Transform & Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform & Route": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Import Transaction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Review (ntfy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
