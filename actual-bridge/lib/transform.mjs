@@ -109,3 +109,27 @@ export function buildActualTransaction(parsed, ctx) {
     cleared: false,
   };
 }
+
+export function buildParsePrompt(rawText, categoryNames) {
+  const cats = (categoryNames || []).join(', ');
+  const system = [
+    'You extract structured data from a single bank transaction SMS (English or Arabic).',
+    'Return ONLY a JSON object with these keys:',
+    '- msg_type: one of "purchase","transfer","refund","credit","otp","marketing","unknown"',
+    '- direction: "debit" or "credit"',
+    '- amount: number (the transaction amount in its original currency, no thousands separators)',
+    '- currency: ISO code, e.g. "EGP" or "USD"',
+    '- date: the transaction date as YYYY-MM-DD. Dates in the SMS are day-first (DD/MM or DD-MM).',
+    '- last4: the last 4 digits of the card/account, as a string, or "" if absent',
+    '- merchant: the merchant/payee name, or "" if absent (for transfers use "Transfer")',
+    '- bank_ref: the bank reference id if present, else ""',
+    '- bank: "Bank A", "Bank B", or "" if unknown',
+    `- category: choose the single best match from this list, or "" if unsure: [${cats}]`,
+    '- confidence: number 0..1 for how confident you are in the extraction',
+    'Do not invent categories outside the list. Output JSON only, no prose.',
+  ].join('\n');
+  return [
+    { role: 'system', content: system },
+    { role: 'user', content: rawText },
+  ];
+}

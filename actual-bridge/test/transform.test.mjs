@@ -182,3 +182,23 @@ test('returns null when foreign currency has no rate', () => {
 test('returns null when no accountId', () => {
   assert.equal(buildActualTransaction(egp, { accountId: null, rate: null, markup: 0.03, categories: CATS2, rawText: 'raw' }), null);
 });
+
+import { buildParsePrompt } from '../lib/transform.mjs';
+import { SAMPLES } from './fixtures.mjs';
+
+test('buildParsePrompt returns a system+user message pair', () => {
+  const msgs = buildParsePrompt(SAMPLES.cibDebit, ['Groceries', 'Dining Out']);
+  assert.equal(msgs.length, 2);
+  assert.equal(msgs[0].role, 'system');
+  assert.equal(msgs[1].role, 'user');
+});
+test('buildParsePrompt embeds the allowed categories and the raw text', () => {
+  const msgs = buildParsePrompt(SAMPLES.cibDebit, ['Groceries', 'Dining Out']);
+  assert.match(msgs[0].content, /Dining Out/);
+  assert.ok(msgs[1].content.includes(SAMPLES.cibDebit));
+});
+test('buildParsePrompt instructs day-first ISO dates and JSON-only output', () => {
+  const msgs = buildParsePrompt('x', []);
+  assert.match(msgs[0].content, /YYYY-MM-DD/);
+  assert.match(msgs[0].content, /day-first/i);
+});
