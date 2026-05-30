@@ -83,8 +83,9 @@ const rawText = $('SMS In').first().json.body.raw_text;
 const categories = $('Get Categories').first().json.data;
 
 let parsed;
-try { parsed = JSON.parse($('OpenAI Parse').first().json.choices[0].message.content); }
+try { parsed = $('Information Extractor').first().json.output; }
 catch (e) { parsed = null; }
+if (!parsed || typeof parsed !== 'object') parsed = null;
 
 let rate = null;
 if (parsed && parsed.currency && parsed.currency !== BASE_CURRENCY) {
