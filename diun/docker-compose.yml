@@ -15,9 +15,13 @@ services:
       DIUN_PROVIDERS_DOCKER: "true"
       # Watch every running container without needing per-container labels.
       DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT: "true"
-      # Log-only for now. To get push alerts, add a notifier here later, e.g.:
-      #   DIUN_NOTIF_NTFY_ENDPOINT: https://ntfy.sh
-      #   DIUN_NOTIF_NTFY_TOPIC: my-homelab-updates
+      # Push alerts via the local ntfy. Both run in the same compose project, so
+      # diun reaches ntfy over the shared network at its service name (port 80) —
+      # no Tailscale DNS dependency, and ntfy's read-write default access means
+      # no token is needed for an internal post. "homelab" is the subscribed topic.
+      DIUN_NOTIF_NTFY_ENDPOINT: http://ntfy
+      DIUN_NOTIF_NTFY_TOPIC: homelab
+      DIUN_NOTIF_NTFY_PRIORITY: 3
     volumes:
       - ./data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
